@@ -1,0 +1,20 @@
+# FastAPI 및 웹 서버
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# 데이터 검증 및 설정
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# 데이터베이스
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+
+# 로깅
+loguru==0.7.3
+
+# 환경변수
+python-dotenv==1.1.1
+
+# 다중 파트 폼 데이터 (파일 업로드 등)
+python-multipart==0.0.19

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "back"
+description = "back"
+readme = "README.md"
+requires-python = ">=3.10"
+version = "0.1.0"
+classifiers = [
+    'Environment :: Console',
+    'Operating System :: POSIX :: Linux',
+    'Programming Language :: Python :: 3',
+]
+
+
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file="requirements.txt"}
+
+
+
+[project.optional-dependencies]
+lint = ["flake8"]
+typecheck = ["mypy", "sqlalchemy[mypy]", "types-pytz"]
+test = ["pytest", "pytest-asyncio", "pytest-cov", "async-asgi-testclient"]

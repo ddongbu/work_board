@@ -1,0 +1,103 @@
+import os
+from pydantic import PostgresDsn, computed_field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+
+    PROJECT_NAME: str = "FastAPI Project"
+    API_V1_STR: str = "/api/v1"
+    API_ENV: str = "local"
+
+    # Database
+    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_DB: str = "app"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+        return PostgresDsn.build(
+            scheme="postgresql+asyncpg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_SERVER,
+            port=self.POSTGRES_PORT,
+            path=self.POSTGRES_DB,
+        )
+
+
+class LocalSettings(Settings):
+    """로컬 개발 환경 설정 - _DEV 환경변수 사용"""
+
+    @model_validator(mode="after")
+    def apply_dev_env_vars(self):
+        # _DEV 환경변수가 있으면 해당 값으로 오버라이드
+        env_mapping = {
+            "POSTGRES_SERVER": "POSTGRES_SERVER_DEV",
+            "POSTGRES_PORT": "POSTGRES_PORT_DEV",
+            "POSTGRES_USER": "POSTGRES_USER_DEV",
+            "POSTGRES_PASSWORD": "POSTGRES_PASSWORD_DEV",
+            "POSTGRES_DB": "POSTGRES_DB_DEV",
+        }
+
+        for field_name, env_key in env_mapping.items():
+            if env_key in os.environ and os.environ[env_key]:
+                raw_val = os.environ[env_key]
+                target_type = self.model_fields[field_name].annotation
+                try:
+                    value = target_type(raw_val) if target_type is not None else raw_val
+                except Exception:
+                    value = raw_val
+                object.__setattr__(self, field_name, value)
+
+        return self
+
+
+class ProductionSettings(Settings):
+    """프로덕션 환경 설정 - _PROD 환경변수 사용"""
+
+    @model_validator(mode="after")
+    def apply_prod_env_vars(self):
+        env_mapping = {
+            "POSTGRES_SERVER": "POSTGRES_SERVER_PROD",
+            "POSTGRES_PORT": "POSTGRES_PORT_PROD",
+            "POSTGRES_USER": "POSTGRES_USER_PROD",
+            "POSTGRES_PASSWORD": "POSTGRES_PASSWORD_PROD",
+            "POSTGRES_DB": "POSTGRES_DB_PROD",
+        }
+
+        for field_name, env_key in env_mapping.items():
+            if env_key in os.environ and os.environ[env_key]:
+                raw_val = os.environ[env_key]
+                target_type = self.model_fields[field_name].annotation
+                try:
+                    value = target_type(raw_val) if target_type is not None else raw_val
+                except Exception:
+                    value = raw_val
+                object.__setattr__(self, field_name, value)
+
+        return self
+
+
+def get_settings() -> Settings:
+    env = os.getenv("API_ENV", "local").lower()
+
+    config_map = {
+        "local": LocalSettings,
+        "prod": ProductionSettings,
+        "production": ProductionSettings,
+    }
+
+    config_class = config_map.get(env, LocalSettings)
+    return config_class()
+
+
+settings = get_settings()
