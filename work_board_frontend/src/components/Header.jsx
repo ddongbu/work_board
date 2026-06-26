@@ -21,7 +21,7 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-40 border-b border-[#D0D7DE] bg-[#F6F8FA]">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
-          <NavLink to="/" className="text-base font-semibold text-[#1F2328] hover:text-[#0969DA]">
+          <NavLink to="/" className="text-xl font-bold text-green-500">
             유퀘스트
           </NavLink>
           <nav className="flex items-center gap-6">
