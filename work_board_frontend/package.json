@@ -11,10 +11,14 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@uiw/react-md-editor": "^4.1.1",
     "axios": "^1.18.1",
+    "firebase": "^12.15.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.14.2",
+    "remark-gfm": "^4.0.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
