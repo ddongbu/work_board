@@ -4,7 +4,9 @@ uvicorn[standard]==0.32.1
 
 # 데이터 검증 및 설정
 pydantic==2.10.3
+pydantic[email]==2.10.3
 pydantic-settings==2.6.1
+email-validator==2.2.0
 
 # 데이터베이스
 sqlalchemy==2.0.36
@@ -21,6 +23,7 @@ python-multipart==0.0.19
 
 # 인증
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 python-jose[cryptography]==3.3.0
 
 # Redis
