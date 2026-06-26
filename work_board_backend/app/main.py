@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from sqlalchemy import text
@@ -18,11 +19,8 @@ from app.api.entities.router import router as entities_router
 async def lifespan(app: FastAPI):
     init_logger(settings.PROJECT_NAME)
 
-    # 데이터베이스 테이블& 스키마 자동 생성
     async with db_manager.engines["DB"].begin() as conn:
-        # app 스키마 생성
         await conn.execute(text("CREATE SCHEMA IF NOT EXISTS app"))
-        # 테이블 생성
         await conn.run_sync(Base.metadata.create_all)
     yield
 
@@ -30,6 +28,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS_LIST,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 api = APIRouter()
