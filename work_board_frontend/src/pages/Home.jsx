@@ -1,52 +1,48 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import api from '../services/api'
+import PostCard from '../components/PostCard'
 
 export default function Home() {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api
+      .get('/posts?page=1&size=12')
+      .then(({ data }) => setPosts(data.items))
+      .catch(() => setError('글을 불러오지 못했습니다.'))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
-      <section className="mb-16">
-        <h1 className="mb-4 text-4xl font-bold text-[#1F2328]">안녕하세요 👋</h1>
-        <p className="mb-6 text-lg leading-relaxed text-[#636C76]">
+    <main className="mx-auto max-w-4xl px-6 py-12">
+      <section className="mb-12">
+        <h1 className="mb-3 text-4xl font-bold text-[#1F2328]">안녕하세요 👋</h1>
+        <p className="text-lg leading-relaxed text-[#636C76]">
           개발하며 배운 것들을 기록하는 공간입니다.
-          <br />
-          글과 프로젝트를 통해 생각을 정리합니다.
         </p>
-        <div className="flex gap-3">
-          <Link
-            to="/posts"
-            className="rounded-md bg-[#1F2328] px-4 py-2 text-sm font-medium text-white hover:bg-[#32383F] transition-colors"
-          >
-            글 읽기
-          </Link>
-          <Link
-            to="/portfolio"
-            className="rounded-md border border-[#D0D7DE] bg-[#F6F8FA] px-4 py-2 text-sm font-medium text-[#1F2328] hover:bg-[#EAEEF2] transition-colors"
-          >
-            포트폴리오 보기
-          </Link>
-        </div>
       </section>
 
       <section>
         <h2 className="mb-4 text-lg font-semibold text-[#1F2328]">최근 글</h2>
-        <div className="divide-y divide-[#D0D7DE] rounded-md border border-[#D0D7DE]">
-          {recentPosts.map((post) => (
-            <Link
-              key={post.id}
-              to={`/posts/${post.id}`}
-              className="flex items-center justify-between px-4 py-3 hover:bg-[#F6F8FA] transition-colors"
-            >
-              <span className="text-sm text-[#1F2328]">{post.title}</span>
-              <span className="text-xs text-[#636C76]">{post.date}</span>
-            </Link>
-          ))}
-        </div>
+        {loading && (
+          <p className="text-sm text-[#636C76]">불러오는 중...</p>
+        )}
+        {error && (
+          <p className="text-sm text-red-500">{error}</p>
+        )}
+        {!loading && !error && posts.length === 0 && (
+          <p className="text-sm text-[#636C76]">아직 작성된 글이 없습니다.</p>
+        )}
+        {!loading && !error && posts.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
+        )}
       </section>
     </main>
   )
 }
-
-const recentPosts = [
-  { id: 1, title: 'FastAPI로 REST API 만들기', date: '2024.04.20' },
-  { id: 2, title: 'React + Vite 프로젝트 세팅', date: '2024.04.15' },
-  { id: 3, title: 'PostgreSQL 기본 사용법', date: '2024.04.10' },
-]

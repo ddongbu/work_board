@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Home from './pages/Home'
-import Posts from './pages/Posts'
-import Portfolio from './pages/Portfolio'
+import PostDetail from './pages/PostDetail'
+import PostWrite from './pages/PostWrite'
 
 export default function App() {
   return (
@@ -10,8 +10,8 @@ export default function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/posts" element={<Posts />} />
-        <Route path="/portfolio" element={<Portfolio />} />
+        <Route path="/posts/:id" element={<PostDetail />} />
+        <Route path="/posts/write" element={<PostWrite />} />
       </Routes>
     </BrowserRouter>
   )
