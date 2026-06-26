@@ -33,6 +33,10 @@ app.add_middleware(
 )
 
 api = APIRouter()
+
+from app.api.auth.router import router as auth_router
+api.include_router(auth_router, prefix="/auth", tags=["auth"])
+
 app.include_router(api)
 
 
