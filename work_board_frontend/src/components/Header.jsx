@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import LoginModal from './LoginModal'
 
@@ -11,6 +11,11 @@ export default function Header() {
   const [showLogin, setShowLogin] = useState(false)
   const token = useAuthStore((s) => s.token)
   const logout = useAuthStore((s) => s.logout)
+  const isLoggedIn = !!token
+
+  function handleLogout() {
+    logout()
+  }
 
   return (
     <>
@@ -36,18 +41,20 @@ export default function Header() {
                 {label}
               </NavLink>
             ))}
-            {token ? (
-              <button
-                onClick={logout}
-                className="text-sm text-[#636C76] hover:text-[#1F2328] transition-colors"
-              >
-                로그아웃
-              </button>
+            {isLoggedIn ? (
+              <>
+                <Link to="/write"
+                  className="px-4 py-1.5 rounded-full border border-green-500 text-green-500 text-sm hover:bg-green-50">
+                  새 글 작성
+                </Link>
+                <button onClick={handleLogout}
+                  className="text-sm text-gray-500 hover:text-gray-700">
+                  로그아웃
+                </button>
+              </>
             ) : (
-              <button
-                onClick={() => setShowLogin(true)}
-                className="rounded-md bg-[#1F2328] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#32383F] transition-colors"
-              >
+              <button onClick={() => setShowLogin(true)}
+                className="px-4 py-1.5 rounded-full bg-green-500 text-white text-sm hover:bg-green-600">
                 로그인
               </button>
             )}

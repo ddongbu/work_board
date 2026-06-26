@@ -10,8 +10,8 @@ export default function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/write" element={<PostWrite />} />
         <Route path="/posts/:id" element={<PostDetail />} />
-        <Route path="/posts/write" element={<PostWrite />} />
       </Routes>
     </BrowserRouter>
   )

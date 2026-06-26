@@ -3,6 +3,7 @@ import api from '../services/api'
 import { useAuthStore } from '../store/authStore'
 
 export default function LoginModal({ onClose }) {
+  const [mode, setMode] = useState('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,13 +18,18 @@ export default function LoginModal({ onClose }) {
       const form = new URLSearchParams()
       form.append('username', username)
       form.append('password', password)
-      const { data } = await api.post('/auth/login', form, {
+      const endpoint = mode === 'login' ? '/auth/login' : '/auth/signup'
+      const { data } = await api.post(endpoint, form, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
       login(data.access_token, { username })
       onClose()
     } catch {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.')
+      setError(
+        mode === 'login'
+          ? '아이디 또는 비밀번호가 올바르지 않습니다.'
+          : '회원가입에 실패했습니다. 다시 시도해주세요.'
+      )
     } finally {
       setLoading(false)
     }
@@ -38,7 +44,9 @@ export default function LoginModal({ onClose }) {
         className="w-full max-w-sm rounded-lg border border-[#D0D7DE] bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 text-lg font-semibold text-[#1F2328]">로그인</h2>
+        <h2 className="mb-4 text-lg font-semibold text-[#1F2328]">
+          {mode === 'login' ? '로그인' : '회원가입'}
+        </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
             type="text"
@@ -62,9 +70,36 @@ export default function LoginModal({ onClose }) {
             disabled={loading}
             className="rounded-md bg-[#1F2328] py-2 text-sm font-medium text-white hover:bg-[#32383F] disabled:opacity-60 transition-colors"
           >
-            {loading ? '로그인 중...' : '로그인'}
+            {loading
+              ? mode === 'login' ? '로그인 중...' : '가입 중...'
+              : mode === 'login' ? '로그인' : '회원가입'}
           </button>
         </form>
+        <p className="mt-4 text-center text-xs text-[#636C76]">
+          {mode === 'login' ? (
+            <>
+              아직 회원이 아니신가요?{' '}
+              <button
+                type="button"
+                onClick={() => { setMode('signup'); setError('') }}
+                className="text-[#0969DA] hover:underline"
+              >
+                회원가입
+              </button>
+            </>
+          ) : (
+            <>
+              이미 계정이 있으신가요?{' '}
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError('') }}
+                className="text-[#0969DA] hover:underline"
+              >
+                로그인
+              </button>
+            </>
+          )}
+        </p>
       </div>
     </div>
   )

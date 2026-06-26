@@ -36,7 +36,7 @@ export default function Home() {
           <p className="text-sm text-[#636C76]">아직 작성된 글이 없습니다.</p>
         )}
         {!loading && !error && posts.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
