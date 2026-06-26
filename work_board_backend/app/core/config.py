@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
+    # JWT
+    JWT_SECRET_KEY: str = "changeme"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def CORS_ORIGINS_LIST(self) -> list[str]:
@@ -54,6 +64,8 @@ class LocalSettings(Settings):
             "POSTGRES_USER": "POSTGRES_USER_DEV",
             "POSTGRES_PASSWORD": "POSTGRES_PASSWORD_DEV",
             "POSTGRES_DB": "POSTGRES_DB_DEV",
+            "REDIS_HOST": "REDIS_HOST_DEV",
+            "REDIS_PORT": "REDIS_PORT_DEV",
         }
 
         for field_name, env_key in env_mapping.items():
@@ -80,6 +92,8 @@ class ProductionSettings(Settings):
             "POSTGRES_USER": "POSTGRES_USER_PROD",
             "POSTGRES_PASSWORD": "POSTGRES_PASSWORD_PROD",
             "POSTGRES_DB": "POSTGRES_DB_PROD",
+            "REDIS_HOST": "REDIS_HOST_PROD",
+            "REDIS_PORT": "REDIS_PORT_PROD",
         }
 
         for field_name, env_key in env_mapping.items():

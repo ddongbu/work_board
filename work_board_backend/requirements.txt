@@ -18,3 +18,10 @@ python-dotenv==1.1.1
 
 # 다중 파트 폼 데이터 (파일 업로드 등)
 python-multipart==0.0.19
+
+# 인증
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Redis
+redis[asyncio]==5.2.1
