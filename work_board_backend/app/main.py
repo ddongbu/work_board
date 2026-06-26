@@ -37,6 +37,9 @@ api = APIRouter()
 from app.api.auth.router import router as auth_router
 api.include_router(auth_router, prefix="/auth", tags=["auth"])
 
+from app.api.posts.router import router as posts_router
+api.include_router(posts_router, prefix="/posts", tags=["posts"])
+
 app.include_router(api)
 
 
