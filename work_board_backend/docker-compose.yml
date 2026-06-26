@@ -1,28 +1,7 @@
-version: '3.8'
-
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: postgres_db
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER_PROD}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_PROD}
-      POSTGRES_DB: ${POSTGRES_DB_PROD}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   web:
     build: .
-    container_name: back_app
+    container_name: work_board_backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - .:/app
@@ -30,10 +9,10 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    depends_on:
-      db:
-        condition: service_healthy
+    networks:
+      - work_board_net
+    restart: unless-stopped
 
-
-volumes:
-  postgres_data:
+networks:
+  work_board_net:
+    external: true

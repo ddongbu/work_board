@@ -10,16 +10,24 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    PROJECT_NAME: str = "FastAPI Project"
+    PROJECT_NAME: str = "Work Board"
     API_V1_STR: str = "/api/v1"
     API_ENV: str = "local"
+
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def CORS_ORIGINS_LIST(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     # Database
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "app"
+    POSTGRES_USER: str = "danny"
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = "work_board"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
