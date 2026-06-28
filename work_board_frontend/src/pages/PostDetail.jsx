@@ -21,8 +21,12 @@ export default function PostDetail() {
 
   const handleDelete = async () => {
     if (!confirm('정말 삭제하시겠습니까?')) return
-    await api.delete(`/posts/${id}`)
-    navigate('/')
+    try {
+      await api.delete(`/posts/${id}`)
+      navigate('/')
+    } catch {
+      alert('삭제에 실패했습니다. 다시 시도해주세요.')
+    }
   }
 
   if (loading) return (
