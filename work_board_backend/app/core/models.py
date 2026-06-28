@@ -1,145 +1,86 @@
 import datetime
-from typing import Optional
-
 from sqlalchemy import (
     PrimaryKeyConstraint, UniqueConstraint, ForeignKey,
-    Integer, Identity, DateTime, String, Boolean, text
+    Integer, Identity, DateTime, String, Boolean, Text, text
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
+from typing import Optional
 
 
 class Base(DeclarativeBase):
     pass
 
 
-class Groups(Base):
-    __tablename__ = 'groups'
+class User(Base):
+    __tablename__ = 'user'
     __table_args__ = (
-        PrimaryKeyConstraint('id', name='groups_pkey'),
-        UniqueConstraint('name', name='groups_name_key'),
-        {'comment': '그룹', 'schema': 'app'}
-    )
-
-    id: Mapped[int] = mapped_column(Integer,
-        Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1),
-        primary_key=True,
-        comment='그룹 ID'
-    )
-    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, comment='그룹명')
-    create_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=text('NOW()'),
-        comment='생성 일시'
-    )
-    update_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        comment='수정 일시'
-    )
-
-
-class Users(Base):
-    __tablename__ = 'users'
-    __table_args__ = (
-        PrimaryKeyConstraint('id', name='users_pkey'),
-        {'comment': '유저', 'schema': 'app'}
+        PrimaryKeyConstraint('id', name='user_pkey'),
+        UniqueConstraint('email', name='user_email_key'),
+        {'schema': 'app'}
     )
 
     id: Mapped[int] = mapped_column(
         Integer,
-        Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1),
+        Identity(always=True, start=1, increment=1),
         primary_key=True,
-        comment='유저 ID'
     )
-    group_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
-        ForeignKey('app.groups.id'),
-        comment='그룹 ID'
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
     )
-    username: Mapped[str] = mapped_column(String(100), nullable=False, comment='사용자명')
-    role: Mapped[int] = mapped_column(Integer, server_default=text('1'), comment='역할 (leader, member)')
-    create_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=text('NOW()'),
-        comment='생성 일시'
-    )
-    update_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        comment='수정 일시'
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
     )
 
 
-class FieldDefinitions(Base):
-    __tablename__ = 'field_definitions'
+class UserPassword(Base):
+    __tablename__ = 'user_pw'
     __table_args__ = (
-        PrimaryKeyConstraint('id', name='field_definitions_pkey'),
-        {'comment': '필드 정의', 'schema': 'app'}
+        PrimaryKeyConstraint('id', name='user_pw_pkey'),
+        {'schema': 'app'}
     )
 
     id: Mapped[int] = mapped_column(
         Integer,
-        Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1),
+        Identity(always=True, start=1, increment=1),
         primary_key=True,
-        comment='필드 정의 ID'
     )
-    group_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
-        ForeignKey('app.groups.id'),
-        comment='그룹 ID'
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('app.user.id'), nullable=False
     )
-    name: Mapped[str] = mapped_column(String(100), nullable=False, comment='필드명')
-    field_type: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        comment='필드 타입 (text, number, date, select)'
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, server_default=text('true'), nullable=False
     )
-    options: Mapped[Optional[dict]] = mapped_column(JSONB, comment='필드 옵션')
-    display_order: Mapped[int] = mapped_column(Integer, server_default=text('0'), comment='표시 순서')
-    is_required: Mapped[bool] = mapped_column(Boolean, server_default=text('false'), comment='필수 여부')
-    create_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=text('NOW()'),
-        comment='생성 일시'
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
     )
-    update_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=text('NOW()'),
-        comment='수정 일시'
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
     )
 
 
-class Entities(Base):
-    __tablename__ = 'entities'
+class Post(Base):
+    __tablename__ = 'post'
     __table_args__ = (
-        PrimaryKeyConstraint('id', name='entities_pkey'),
-        {'comment': '엔티티 (실제 데이터)', 'schema': 'app'}
+        PrimaryKeyConstraint('id', name='post_pkey'),
+        {'schema': 'app'}
     )
 
     id: Mapped[int] = mapped_column(
         Integer,
-        Identity(always=True, start=1, increment=1, minvalue=1, maxvalue=2147483647, cycle=False, cache=1),
+        Identity(always=True, start=1, increment=1),
         primary_key=True,
-        comment='엔티티 ID'
     )
-    group_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
-        ForeignKey('app.groups.id'),
-        comment='그룹 ID'
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    is_published: Mapped[bool] = mapped_column(
+        Boolean, server_default=text('true'), nullable=False
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False, comment='엔티티명')
-    custom_fields: Mapped[dict] = mapped_column(
-        JSONB,
-        server_default=text("'{}'::jsonb"),
-        comment='커스텀 필드 데이터'
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
     )
-    create_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=text('NOW()'),
-        comment='생성 일시'
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
     )
-    update_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime,
-        server_default=text('NOW()'),
-        comment='수정 일시'
-    )
-
