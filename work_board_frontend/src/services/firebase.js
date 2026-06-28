@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app'
+import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -10,10 +10,13 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-const app = initializeApp(firebaseConfig)
-const storage = getStorage(app)
+function getFirebaseStorage() {
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+  return getStorage(app)
+}
 
 export async function uploadImage(file) {
+  const storage = getFirebaseStorage()
   const path = `posts/${Date.now()}_${file.name}`
   const storageRef = ref(storage, path)
   await uploadBytes(storageRef, file)

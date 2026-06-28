@@ -31,6 +31,8 @@ export default function PostWrite() {
     try {
       const url = await uploadImage(file)
       setThumbnailUrl(url)
+    } catch {
+      alert('이미지 업로드에 실패했습니다.')
     } finally {
       setUploading(false)
     }
@@ -48,6 +50,8 @@ export default function PostWrite() {
         is_published: true,
       })
       navigate(`/posts/${res.data.id}`)
+    } catch {
+      alert('글 등록에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setSubmitting(false)
     }
