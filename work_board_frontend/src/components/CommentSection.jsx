@@ -166,7 +166,7 @@ export default function CommentSection({ postId }) {
 
   useEffect(() => { load() }, [postId])
 
-  const totalCount = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0)
+  const totalCount = comments.length
 
   const submit = async () => {
     if (!text.trim()) return
