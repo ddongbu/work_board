@@ -1,47 +1,80 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 import PostCard from '../components/PostCard'
 
+const SIZE = 12
+
 export default function Home() {
   const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState(null)
+  const sentinelRef = useRef(null)
+  const stateRef = useRef({ page: 1, loading: false, hasMore: true })
+
+  const fetchNext = async () => {
+    const { page, loading, hasMore } = stateRef.current
+    if (loading || !hasMore) return
+
+    stateRef.current.loading = true
+    setLoading(true)
+
+    try {
+      const { data } = await api.get(`/posts?page=${page}&size=${SIZE}`)
+      const newHasMore = page * SIZE < data.total
+
+      setPosts((prev) => (page === 1 ? data.items : [...prev, ...data.items]))
+      setHasMore(newHasMore)
+
+      stateRef.current.page = page + 1
+      stateRef.current.hasMore = newHasMore
+    } catch {
+      setError('글을 불러오지 못했습니다.')
+    } finally {
+      stateRef.current.loading = false
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    api
-      .get('/posts?page=1&size=12')
-      .then(({ data }) => setPosts(data.items))
-      .catch(() => setError('글을 불러오지 못했습니다.'))
-      .finally(() => setLoading(false))
+    fetchNext()
+  }, [])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) fetchNext()
+      },
+      { threshold: 0.1 },
+    )
+    if (sentinelRef.current) observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
   }, [])
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
-      <section className="mb-12">
-        <h1 className="mb-3 text-4xl font-bold text-[#1F2328]">안녕하세요 👋</h1>
-        <p className="text-lg leading-relaxed text-[#636C76]">
-          개발하며 배운 것들을 기록하는 공간입니다.
-        </p>
-      </section>
-
       <section>
         <h2 className="mb-4 text-lg font-semibold text-[#1F2328]">최근 글</h2>
-        {loading && (
-          <p className="text-sm text-[#636C76]">불러오는 중...</p>
-        )}
-        {error && (
-          <p className="text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-500">{error}</p>}
         {!loading && !error && posts.length === 0 && (
           <p className="text-sm text-[#636C76]">아직 작성된 글이 없습니다.</p>
         )}
-        {!loading && !error && posts.length > 0 && (
+        {posts.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </div>
         )}
+        {loading && (
+          <p className="mt-6 text-center text-sm text-[#636C76]">불러오는 중...</p>
+        )}
+        {!hasMore && posts.length > 0 && (
+          <p className="mt-6 text-center text-sm text-[#636C76]">
+            모든 글을 불러왔습니다.
+          </p>
+        )}
+        <div ref={sentinelRef} className="h-1" />
       </section>
     </main>
   )

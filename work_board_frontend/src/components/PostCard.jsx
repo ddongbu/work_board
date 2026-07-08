@@ -25,6 +25,11 @@ export default function PostCard({ post }) {
         <h3 className="text-sm font-semibold text-[#1F2328] line-clamp-2 leading-snug">
           {post.title}
         </h3>
+        {post.summary && (
+          <p className="text-xs text-[#636C76] line-clamp-2 leading-relaxed">
+            {post.summary}
+          </p>
+        )}
         <p className="mt-auto text-xs text-[#636C76]">{formattedDate}</p>
       </div>
     </Link>
