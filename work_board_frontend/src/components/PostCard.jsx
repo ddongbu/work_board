@@ -14,7 +14,7 @@ export default function PostCard({ post }) {
   const authorLabel = post.author_nickname || 'unknown'
   const authorInitial = authorLabel[0].toUpperCase()
 
-  const formattedDate = new Date(post.created_at).toLocaleDateString('ko-KR', {
+  const formattedDate = new Date(post.created_at + 'Z').toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
