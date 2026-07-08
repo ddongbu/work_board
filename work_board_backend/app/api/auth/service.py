@@ -7,8 +7,8 @@ from app.core.security import hash_password, verify_password
 from app.core.config import settings
 
 
-async def create_user(db: AsyncSession, email: str, password: str) -> User:
-    user = User(email=email)
+async def create_user(db: AsyncSession, email: str, password: str, nickname: str) -> User:
+    user = User(email=email, nickname=nickname)
     db.add(user)
     await db.flush()
     user_pw = UserPassword(user_id=user.id, password_hash=hash_password(password))

@@ -40,6 +40,9 @@ api.include_router(auth_router, prefix="/auth", tags=["auth"])
 from app.api.posts.router import router as posts_router
 api.include_router(posts_router, prefix="/posts", tags=["posts"])
 
+from app.api.upload.router import router as upload_router
+api.include_router(upload_router, prefix="/upload", tags=["upload"])
+
 app.include_router(api)
 
 

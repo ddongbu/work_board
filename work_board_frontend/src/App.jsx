@@ -14,7 +14,11 @@ export default function App() {
 
   useEffect(() => {
     axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true })
-      .then((res) => login(res.data.access_token))
+      .then(async (res) => {
+        const token = res.data.access_token
+        const me = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+        login(token, me.data)
+      })
       .catch(() => {})
   }, [])
 
