@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Cookie, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Cookie, Query, Response, status
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 

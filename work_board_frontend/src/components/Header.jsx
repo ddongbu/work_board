@@ -13,14 +13,14 @@ export default function Header() {
       <header className="sticky top-0 z-40 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link to="/" className="text-xl font-bold tracking-tight text-gray-900">
-            You<span className="text-green-500">Quest</span>
+            You<span className="text-blue-600">Quest</span>
           </Link>
           <div className="flex items-center gap-4">
             {token ? (
               <>
                 <Link
                   to="/write"
-                  className="px-4 py-1.5 rounded-full border border-green-500 text-green-500 text-sm font-medium hover:bg-green-50 transition-colors"
+                  className="px-4 py-1.5 rounded-full border border-blue-600 text-blue-600 text-sm font-medium hover:bg-blue-50 transition-colors"
                 >
                   새 글 작성
                 </Link>
@@ -34,7 +34,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => setShowLogin(true)}
-                className="px-4 py-1.5 rounded-full bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-colors"
+                className="px-4 py-1.5 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 로그인
               </button>

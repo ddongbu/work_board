@@ -39,7 +39,7 @@ export default function PostDetail() {
 
   if (status === 'loading') return (
     <div className="flex justify-center pt-32">
-      <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
@@ -57,7 +57,7 @@ export default function PostDetail() {
           year: 'numeric', month: 'long', day: 'numeric'
         })}
       </p>
-      <article className="prose prose-green max-w-none">
+      <article className="prose prose-blue max-w-none">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
       </article>
       {token && (

@@ -7,7 +7,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function FieldStatus({ checking, available }) {
   if (checking) return <span className="text-xs text-gray-400">확인 중...</span>
-  if (available === true) return <span className="text-xs text-green-500">사용 가능합니다.</span>
+  if (available === true) return <span className="text-xs text-blue-600">사용 가능합니다.</span>
   if (available === false) return <span className="text-xs text-red-500">이미 사용 중입니다.</span>
   return null
 }
@@ -122,8 +122,8 @@ export default function LoginModal({ onClose }) {
                   }}
                   className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${
                     errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-300'
-                    : emailStatus.available ? 'border-green-400 focus:border-green-500 focus:ring-green-300'
-                    : 'border-gray-200 focus:border-green-500 focus:ring-green-500'
+                    : emailStatus.available ? 'border-blue-400 focus:border-blue-600 focus:ring-blue-300'
+                    : 'border-gray-200 focus:border-blue-600 focus:ring-blue-500'
                   }`}
                 />
                 <div className="mt-1 min-h-[1rem]">
@@ -158,8 +158,8 @@ export default function LoginModal({ onClose }) {
                     }}
                     className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${
                       errors.nickname ? 'border-red-400 focus:border-red-400 focus:ring-red-300'
-                      : nicknameStatus.available ? 'border-green-400 focus:border-green-500 focus:ring-green-300'
-                      : 'border-gray-200 focus:border-green-500 focus:ring-green-500'
+                      : nicknameStatus.available ? 'border-blue-400 focus:border-blue-600 focus:ring-blue-300'
+                      : 'border-gray-200 focus:border-blue-600 focus:ring-blue-500'
                     }`}
                   />
                   <div className="mt-1 min-h-[1rem]">
@@ -195,7 +195,7 @@ export default function LoginModal({ onClose }) {
                   placeholder={mode === 'signup' ? '비밀번호 (8자 이상, 영문+숫자)' : '비밀번호'}
                   className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${
                     errors.password ? 'border-red-400 focus:border-red-400 focus:ring-red-300'
-                    : 'border-gray-200 focus:border-green-500 focus:ring-green-500'
+                    : 'border-gray-200 focus:border-blue-600 focus:ring-blue-500'
                   }`}
                 />
                 {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
@@ -208,7 +208,7 @@ export default function LoginModal({ onClose }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-md bg-green-500 py-2 text-sm font-medium text-white hover:bg-green-600 disabled:opacity-60 transition-colors"
+            className="rounded-md bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {isSubmitting
               ? mode === 'login' ? '로그인 중...' : '가입 중...'
@@ -220,14 +220,14 @@ export default function LoginModal({ onClose }) {
           {mode === 'login' ? (
             <>
               아직 회원이 아니신가요?{' '}
-              <button type="button" onClick={() => switchMode('signup')} className="text-green-500 hover:underline">
+              <button type="button" onClick={() => switchMode('signup')} className="text-blue-600 hover:underline">
                 회원가입
               </button>
             </>
           ) : (
             <>
               이미 계정이 있으신가요?{' '}
-              <button type="button" onClick={() => switchMode('login')} className="text-green-500 hover:underline">
+              <button type="button" onClick={() => switchMode('login')} className="text-blue-600 hover:underline">
                 로그인
               </button>
             </>
