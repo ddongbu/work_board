@@ -13,13 +13,14 @@ export default function App() {
   const login = useAuthStore((s) => s.login)
 
   useEffect(() => {
+    if (!useAuthStore.getState().token) return
     axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true })
       .then(async (res) => {
         const token = res.data.access_token
         const me = await axios.get(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
         login(token, me.data)
       })
-      .catch(() => {})
+      .catch(() => { useAuthStore.getState().logout() })
   }, [])
 
   return (
