@@ -45,7 +45,7 @@ export default function PostCard({ post }) {
         <p className="text-sm text-gray-500 line-clamp-3 leading-relaxed flex-1">
           {preview}
         </p>
-        <p className="mt-4 text-xs text-gray-400">{formattedDate} · 댓글 0개</p>
+        <p className="mt-4 text-xs text-gray-400">{formattedDate} · 댓글 {post.comment_count ?? 0}개</p>
       </div>
 
       <div className="border-t border-gray-100" />

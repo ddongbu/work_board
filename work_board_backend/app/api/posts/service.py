@@ -19,7 +19,7 @@ def make_summary(content: str, max_len: int = 150) -> str:
     return text[:max_len] + ('...' if len(text) > max_len else '')
 
 
-def _to_list_item(post: Post, nickname: str, like_count: int = 0) -> dict:
+def _to_list_item(post: Post, nickname: str, like_count: int = 0, comment_count: int = 0) -> dict:
     return {
         'id': post.id,
         'title': post.title,
@@ -28,6 +28,7 @@ def _to_list_item(post: Post, nickname: str, like_count: int = 0) -> dict:
         'summary': make_summary(post.content),
         'author_nickname': nickname,
         'like_count': like_count,
+        'comment_count': comment_count,
     }
 
 
@@ -39,11 +40,22 @@ async def get_posts(db: AsyncSession, page: int, size: int):
         .group_by(PostLike.post_id)
         .subquery()
     )
+    comment_counts = (
+        select(Comment.post_id, func.count().label('cnt'))
+        .where(Comment.parent_id == None)
+        .group_by(Comment.post_id)
+        .subquery()
+    )
 
     result = await db.execute(
-        select(Post, User.nickname, func.coalesce(like_counts.c.cnt, 0).label('like_count'))
+        select(
+            Post, User.nickname,
+            func.coalesce(like_counts.c.cnt, 0).label('like_count'),
+            func.coalesce(comment_counts.c.cnt, 0).label('comment_count'),
+        )
         .join(User, Post.user_id == User.id)
         .outerjoin(like_counts, Post.id == like_counts.c.post_id)
+        .outerjoin(comment_counts, Post.id == comment_counts.c.post_id)
         .where(Post.is_published == True)
         .order_by(Post.created_at.desc())
         .offset(offset)
@@ -54,7 +66,7 @@ async def get_posts(db: AsyncSession, page: int, size: int):
         select(func.count()).select_from(Post).where(Post.is_published == True)
     )
     total = count_result.scalar()
-    items = [_to_list_item(post, nickname, int(like_count)) for post, nickname, like_count in rows]
+    items = [_to_list_item(post, nickname, int(like_count), int(comment_count)) for post, nickname, like_count, comment_count in rows]
     return items, total
 
 
