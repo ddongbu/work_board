@@ -3,7 +3,7 @@ import api from '../services/api'
 import { useAuthStore } from '../store/authStore'
 
 function formatDate(dateStr) {
-  const date = new Date(dateStr)
+  const date = new Date(dateStr + 'Z')
   const now = new Date()
   const diff = Math.floor((now - date) / 1000)
   if (diff < 60) return '방금 전'
@@ -166,7 +166,7 @@ export default function CommentSection({ postId }) {
 
   useEffect(() => { load() }, [postId])
 
-  const totalCount = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0)
+  const totalCount = comments.length
 
   const submit = async () => {
     if (!text.trim()) return

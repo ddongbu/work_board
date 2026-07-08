@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import MDEditor from '@uiw/react-md-editor'
 import api from '../services/api'
@@ -23,6 +23,24 @@ function reducer(state, action) {
   }
 }
 
+// 업로드 전 클라이언트 사이드 이미지 압축 (최대 1200px, JPEG 80%)
+async function compressImage(file, maxWidth = 1200, quality = 0.8) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      const scale = Math.min(1, maxWidth / img.width)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob((blob) => resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })), 'image/jpeg', quality)
+    }
+    img.src = objectUrl
+  })
+}
+
 export default function PostWrite() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -30,6 +48,7 @@ export default function PostWrite() {
   const token = useAuthStore((s) => s.token)
   const [state, dispatch] = useReducer(reducer, initialState)
   const { title, content, thumbnailUrl, uploading, submitting, loading } = state
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     if (!isEdit) return
@@ -59,21 +78,86 @@ export default function PostWrite() {
     </div>
   )
 
-  const handleImageUpload = async (e) => {
+  // 이미지 파일을 S3에 업로드하고 커서 위치에 마크다운 삽입
+  const insertImageFromFile = async (file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    dispatch({ type: 'setUploading', value: true })
+    try {
+      const compressed = await compressImage(file)
+      const formData = new FormData()
+      formData.append('file', compressed)
+      const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const imageMarkdown = `\n![image](${res.data.url})\n`
+
+      // textarea의 현재 커서 위치에 삽입
+      const textarea = document.querySelector('.w-md-editor-text-input')
+      if (textarea) {
+        const start = textarea.selectionStart
+        const end = textarea.selectionEnd
+        const current = textarea.value
+        dispatch({ type: 'setField', field: 'content', value: current.slice(0, start) + imageMarkdown + current.slice(end) })
+        // 삽입 후 커서를 이미지 마크다운 끝으로 이동
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + imageMarkdown.length
+          textarea.focus()
+        }, 50)
+      } else {
+        dispatch({ type: 'setField', field: 'content', value: content + imageMarkdown })
+      }
+    } catch {
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      dispatch({ type: 'setUploading', value: false })
+    }
+  }
+
+  const handleThumbnailUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
     dispatch({ type: 'setUploading', value: true })
     try {
+      const compressed = await compressImage(file)
       const formData = new FormData()
-      formData.append('file', file)
-      const res = await api.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      formData.append('file', compressed)
+      const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
       dispatch({ type: 'setField', field: 'thumbnailUrl', value: res.data.url })
     } catch {
       alert('이미지 업로드에 실패했습니다.')
     } finally {
       dispatch({ type: 'setUploading', value: false })
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    insertImageFromFile(file)
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDragEnter = (e) => {
+    e.preventDefault()
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    // relatedTarget이 드롭존 내부이면 무시
+    if (e.currentTarget.contains(e.relatedTarget)) return
+    setIsDragging(false)
+  }
+
+  // 클립보드 이미지 붙여넣기 (Ctrl+V)
+  const handlePaste = (e) => {
+    const file = e.clipboardData?.files[0]
+    if (file?.type.startsWith('image/')) {
+      e.preventDefault()
+      insertImageFromFile(file)
     }
   }
 
@@ -111,19 +195,43 @@ export default function PostWrite() {
         <div className="flex items-center gap-3">
           <label className="cursor-pointer px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
             {uploading ? '업로드 중...' : '썸네일 추가'}
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+            <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} />
           </label>
           {thumbnailUrl && (
             <img src={thumbnailUrl} alt="썸네일 미리보기" className="h-10 w-16 object-cover rounded" />
           )}
         </div>
-        <div data-color-mode="light">
+
+        {/* 에디터 드롭존 */}
+        <div
+          data-color-mode="light"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onPaste={handlePaste}
+          className={`relative rounded-lg transition-all ${isDragging ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}
+        >
+          {isDragging && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-blue-50/80 border-2 border-dashed border-blue-400 pointer-events-none">
+              <p className="text-blue-600 font-medium text-sm">이미지를 놓으면 본문에 삽입됩니다</p>
+            </div>
+          )}
+          {uploading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70 pointer-events-none">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                업로드 중...
+              </div>
+            </div>
+          )}
           <MDEditor
             value={content}
             onChange={(val) => dispatch({ type: 'setField', field: 'content', value: val ?? '' })}
             height={500}
           />
         </div>
+
         <div className="flex justify-end gap-3 pt-4">
           <button type="button" onClick={() => navigate(isEdit ? `/posts/${id}` : '/')}
             className="px-5 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">

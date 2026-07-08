@@ -120,7 +120,7 @@ export default function PostDetail() {
           <p className="text-sm text-gray-500">
             <span className="font-medium text-gray-700">{post.author_nickname}</span>
             <span className="mx-2">·</span>
-            {new Date(post.created_at).toLocaleDateString('ko-KR', {
+            {new Date(post.created_at + 'Z').toLocaleDateString('ko-KR', {
               year: 'numeric', month: 'long', day: 'numeric'
             })}
           </p>
