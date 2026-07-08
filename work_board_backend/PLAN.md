@@ -2,7 +2,7 @@
 DEV: DEV-001
 task: task-1
 title: 백엔드 PostListItem summary 필드 추가
-status: in-progress
+status: completed
 created: 2026-07-08
 ---
 

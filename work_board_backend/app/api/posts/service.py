@@ -6,9 +6,11 @@ from app.core.models import Post
 
 
 def make_summary(content: str, max_len: int = 150) -> str:
+    if not content:
+        return ''
     text = re.sub(r'!\[.*?\]\(.*?\)', '', content)
     text = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', text)
-    text = re.sub(r'#{1,6}\s*', '', text)
+    text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
     text = re.sub(r'[*_`~]{1,3}', '', text)
     text = re.sub(r'^\s*[-*+>]\s*', '', text, flags=re.MULTILINE)
     text = re.sub(r'^\s*\d+\.\s*', '', text, flags=re.MULTILINE)
