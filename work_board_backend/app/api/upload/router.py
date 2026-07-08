@@ -76,6 +76,7 @@ async def upload_image(
             Key=safe_key,
             Body=data,
             ContentType=actual_mime,
+            CacheControl='public, max-age=31536000',  # 브라우저 1년 캐싱
         )
     except HTTPException:
         raise
