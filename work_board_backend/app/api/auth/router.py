@@ -85,6 +85,24 @@ async def logout(
     return {"message": "로그아웃 완료"}
 
 
+@router.get("/check-email")
+async def check_email(
+    email: str = Query(..., min_length=1),
+    db: AsyncSession = Depends(get_database_session),
+):
+    available = await service.check_email_available(db, email)
+    return {"available": available}
+
+
+@router.get("/check-nickname")
+async def check_nickname(
+    nickname: str = Query(..., min_length=1),
+    db: AsyncSession = Depends(get_database_session),
+):
+    available = await service.check_nickname_available(db, nickname)
+    return {"available": available}
+
+
 @router.get("/owner", response_model=UserResponse)
 async def owner(db: AsyncSession = Depends(get_database_session)):
     from sqlalchemy import select

@@ -46,6 +46,16 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
     return result.scalar_one_or_none()
 
 
+async def check_email_available(db: AsyncSession, email: str) -> bool:
+    result = await db.execute(select(User.id).where(User.email == email))
+    return result.scalar_one_or_none() is None
+
+
+async def check_nickname_available(db: AsyncSession, nickname: str) -> bool:
+    result = await db.execute(select(User.id).where(User.nickname == nickname))
+    return result.scalar_one_or_none() is None
+
+
 async def save_refresh_token(redis: Redis, user_id: int, token: str) -> None:
     expire = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
     await redis.set(f"refresh:{user_id}", token, ex=expire)
