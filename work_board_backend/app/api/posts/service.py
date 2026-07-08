@@ -1,7 +1,9 @@
 import re
-from sqlalchemy import select, func
+import datetime
+from sqlalchemy import select, func, delete
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.models import Post, User
+from app.core.models import Post, User, PostLike, Comment
 
 
 def make_summary(content: str, max_len: int = 150) -> str:
@@ -78,3 +80,103 @@ async def delete_post(db: AsyncSession, post_id: int) -> bool:
     await db.delete(post)
     await db.commit()
     return True
+
+
+async def update_post(db: AsyncSession, post: Post, **fields) -> Post:
+    for key, val in fields.items():
+        if val is not None:
+            setattr(post, key, val)
+    post.updated_at = datetime.datetime.utcnow()
+    await db.commit()
+    await db.refresh(post)
+    return post
+
+
+async def toggle_like(db: AsyncSession, post_id: int, user_id: int) -> tuple[int, bool]:
+    existing = await db.execute(
+        select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == user_id)
+    )
+    like = existing.scalar_one_or_none()
+    if like:
+        await db.delete(like)
+        await db.commit()
+        liked = False
+    else:
+        db.add(PostLike(post_id=post_id, user_id=user_id))
+        await db.commit()
+        liked = True
+    count_result = await db.execute(
+        select(func.count()).select_from(PostLike).where(PostLike.post_id == post_id)
+    )
+    return count_result.scalar(), liked
+
+
+async def get_like_status(db: AsyncSession, post_id: int, user_id: int | None) -> tuple[int, bool]:
+    count_result = await db.execute(
+        select(func.count()).select_from(PostLike).where(PostLike.post_id == post_id)
+    )
+    count = count_result.scalar()
+    if user_id is None:
+        return count, False
+    existing = await db.execute(
+        select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == user_id)
+    )
+    return count, existing.scalar_one_or_none() is not None
+
+
+async def get_comments(db: AsyncSession, post_id: int) -> list[dict]:
+    result = await db.execute(
+        select(Comment, User.nickname)
+        .join(User, Comment.user_id == User.id)
+        .where(Comment.post_id == post_id, Comment.parent_id == None)
+        .order_by(Comment.created_at.asc())
+    )
+    top_level = result.all()
+
+    reply_result = await db.execute(
+        select(Comment, User.nickname)
+        .join(User, Comment.user_id == User.id)
+        .where(Comment.post_id == post_id, Comment.parent_id != None)
+        .order_by(Comment.created_at.asc())
+    )
+    replies_raw = reply_result.all()
+
+    reply_map: dict[int, list] = {}
+    for comment, nickname in replies_raw:
+        reply_map.setdefault(comment.parent_id, []).append({
+            'id': comment.id,
+            'author_nickname': nickname,
+            'content': comment.content,
+            'created_at': comment.created_at,
+            'parent_id': comment.parent_id,
+            'replies': [],
+        })
+
+    comments = []
+    for comment, nickname in top_level:
+        comments.append({
+            'id': comment.id,
+            'author_nickname': nickname,
+            'content': comment.content,
+            'created_at': comment.created_at,
+            'parent_id': None,
+            'replies': reply_map.get(comment.id, []),
+        })
+    return comments
+
+
+async def create_comment(db: AsyncSession, post_id: int, user_id: int,
+                         content: str, parent_id: int | None) -> Comment:
+    comment = Comment(post_id=post_id, user_id=user_id, content=content, parent_id=parent_id)
+    db.add(comment)
+    await db.commit()
+    await db.refresh(comment)
+    return comment
+
+
+async def delete_comment(db: AsyncSession, comment_id: int) -> None:
+    result = await db.execute(select(Comment).where(Comment.id == comment_id))
+    comment = result.scalar_one_or_none()
+    if comment:
+        await db.delete(comment)
+        await db.commit()
