@@ -17,8 +17,19 @@ async def list_posts(
 ):
     items, total = await service.get_posts(db, page, size)
     return PostListResponse(
-        items=[PostListItem.model_validate(p) for p in items],
-        total=total, page=page, size=size,
+        items=[
+            PostListItem(
+                id=p.id,
+                title=p.title,
+                thumbnail_url=p.thumbnail_url,
+                created_at=p.created_at,
+                summary=service.make_summary(p.content),
+            )
+            for p in items
+        ],
+        total=total,
+        page=page,
+        size=size,
     )
 
 

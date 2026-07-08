@@ -28,6 +28,7 @@ class PostListItem(BaseModel):
     title: str
     thumbnail_url: Optional[str]
     created_at: datetime
+    summary: str
 
     class Config:
         from_attributes = True
