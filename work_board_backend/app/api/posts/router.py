@@ -50,9 +50,11 @@ async def get_post(
     post_id: int,
     db: AsyncSession = Depends(get_database_session),
 ):
+    if post_id <= 0:
+        raise HTTPException(status_code=400, detail="유효하지 않은 게시글 ID입니다.")
     result = await service.get_post(db, post_id)
     if not result:
-        raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다")
+        raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다.")
     post, nickname = result
     return PostResponse(
         id=post.id,
@@ -72,6 +74,12 @@ async def delete_post(
     db: AsyncSession = Depends(get_database_session),
     current_user=Depends(get_current_user),
 ):
-    deleted = await service.delete_post(db, post_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다")
+    if post_id <= 0:
+        raise HTTPException(status_code=400, detail="유효하지 않은 게시글 ID입니다.")
+    result = await service.get_post(db, post_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다.")
+    post, _ = result
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
+    await service.delete_post(db, post_id)
