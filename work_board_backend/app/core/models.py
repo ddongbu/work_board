@@ -7,6 +7,8 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 from typing import Optional
 
 
+
+
 class Base(DeclarativeBase):
     pass
 
@@ -84,5 +86,52 @@ class Post(Base):
         DateTime, server_default=text('NOW()')
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
+    )
+
+
+class PostLike(Base):
+    __tablename__ = 'post_like'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='post_like_pkey'),
+        UniqueConstraint('post_id', 'user_id', name='post_like_post_user_key'),
+        {'schema': 'app'}
+    )
+
+    id: Mapped[int] = mapped_column(
+        Integer, Identity(always=True, start=1, increment=1), primary_key=True
+    )
+    post_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('app.post.id', ondelete='CASCADE'), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('app.user.id', ondelete='CASCADE'), nullable=False
+    )
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
+    )
+
+
+class Comment(Base):
+    __tablename__ = 'comment'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='comment_pkey'),
+        {'schema': 'app'}
+    )
+
+    id: Mapped[int] = mapped_column(
+        Integer, Identity(always=True, start=1, increment=1), primary_key=True
+    )
+    post_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('app.post.id', ondelete='CASCADE'), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('app.user.id', ondelete='CASCADE'), nullable=False
+    )
+    parent_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey('app.comment.id', ondelete='CASCADE'), nullable=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=text('NOW()')
     )

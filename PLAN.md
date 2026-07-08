@@ -1,50 +1,58 @@
 ---
-DEV: DEV-001
-task: task-3
-title: Home 무한 스크롤 구현
+DEV: DEV-002
+task: task-2
+title: 게시글 상세 UI 개편 + 좋아요·댓글·수정 프론트엔드
 status: in-progress
 created: 2026-07-08
 ---
 
-# task-3: Home 무한 스크롤 구현
+# task-2: 프론트엔드 — PostDetail 개편 + 좋아요·댓글·게시글수정
 
 ## 배경
-
-메인화면이 현재 단일 요청(`/posts?page=1&size=20`)으로 고정된 목록을 보여주고 있음.
-게시글이 늘어날수록 초기 로드 비용이 증가하고, 사용자 경험이 저하됨.
-IntersectionObserver 기반 무한 스크롤로 필요한 만큼만 점진적으로 로드하도록 전환.
+PostDetail이 단순 렌더만 하고 수정/삭제가 하단에만 있음.
+스크린샷 기준으로 헤더(작성자·날짜·수정·삭제)와 왼쪽 사이드 좋아요, 하단 댓글 섹션을 추가한다.
 
 ## 아키텍처
 
 ```
-Home.jsx
-  ├── stateRef { page, loading, hasMore }   ← stale closure 방지용 Ref
-  ├── useState: posts, loading, hasMore, error
-  ├── fetchNext()                           ← stateRef 참조, API 호출 후 양쪽 동기화
-  ├── useEffect(fetchNext, [])              ← 초기 로드
-  ├── useEffect(IntersectionObserver, [])  ← sentinel 감지 시 fetchNext 호출
-  └── <div ref={sentinelRef} />            ← 뷰포트 진입 감지 트리거
+PostDetail.jsx
+  ├── 헤더: 제목 / 작성자·날짜 (좌) + 수정·삭제 (우, 로그인+본인만)
+  ├── 왼쪽 플로팅: 하트 버튼 + 좋아요 수
+  ├── 본문: ReactMarkdown
+  └── CommentSection.jsx
+        ├── "N개의 댓글" 헤더
+        ├── 입력 폼 (로그인 시)
+        └── 댓글 목록 (CommentItem)
+              └── 대댓글 토글 + 대댓글 입력 폼
+
+PostWrite.jsx → 수정 모드 지원 (id param 있으면 PUT, 없으면 POST)
+App.jsx       → /posts/:id/edit 라우트 추가
 ```
 
 ## 구현 범위
 
-### 1. `work_board_frontend/src/pages/Home.jsx` (전체 교체)
+### 1. `src/pages/PostDetail.jsx` (전면 개편)
+- 헤더: 제목, 작성자·날짜(좌), 수정·삭제(우, 본인만)
+- 왼쪽 사이드: 하트(♥) + count, 마운트 시 GET /posts/:id/like
+- 수정 버튼: /posts/:id/edit 이동
 
-- `useReducer` 패턴 제거, `useState` + `stateRef` 패턴으로 교체
-- IntersectionObserver 마운트 시 한 번만 등록 (빈 deps 배열)
-- `SIZE = 12` 고정, `page * SIZE < data.total` 조건으로 `hasMore` 판단
-- 헤딩 "최근 글" 유지, 색상 `#1F2328` / `#636C76` 사용
-- "안녕하세요" 관련 주석·코드 완전 제거
+### 2. `src/components/CommentSection.jsx` (신규)
+- 댓글 수 표시, textarea 폼, 댓글 목록
+- 대댓글: "N개의 답글" 버튼 클릭 시 토글, 대댓글 입력 폼
+
+### 3. `src/pages/PostWrite.jsx` (수정 모드 추가)
+- useParams로 id 감지 → id 있으면 기존 글 로드(GET) 후 PUT 제출
+- /posts/:id/edit 경로에서 재사용
+
+### 4. `src/App.jsx` (수정)
+- `/posts/:id/edit` 라우트 추가
 
 ## 주의사항
-
-- IntersectionObserver deps 배열이 비어야 함 — `fetchNext`를 deps에 넣으면 재등록 반복 발생
-- stateRef와 React state 양쪽을 동기화해야 UI와 로직이 일치
-- 외부 라이브러리 추가 금지 (IntersectionObserver는 브라우저 내장)
+- 좋아요는 비로그인도 수 확인 가능, 클릭은 로그인 필요
+- 수정/삭제 버튼은 post.user_id 대신 authStore 닉네임으로 본인 확인 불가 → API가 403 반환하면 alert
+- CommentSection은 PostDetail에서 post_id prop으로 받음
 
 ## 검증
-
-1. 페이지 진입 시 게시글 12개 로드
-2. 스크롤을 맨 아래로 내리면 "불러오는 중..." 표시 후 추가 게시글 append
-3. 전체 로드 완료 시 "모든 글을 불러왔습니다." 표시
-4. 게시글이 없을 때 "아직 작성된 글이 없습니다." 표시
+- 비로그인: 좋아요 수 보임, 하트 클릭 시 로그인 모달 유도
+- 로그인: 하트 클릭 시 토글, 댓글 작성 가능
+- 본인 글: 수정/삭제 버튼 노출

@@ -30,6 +30,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/write" element={<PostWrite />} />
         <Route path="/posts/:id" element={<PostDetail />} />
+        <Route path="/posts/:id/edit" element={<PostWrite />} />
       </Routes>
     </BrowserRouter>
   )
