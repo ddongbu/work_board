@@ -5,66 +5,64 @@ import { useAuthStore } from '../store/authStore'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function FieldStatus({ checking, available }) {
-  if (checking) return <span className="text-xs text-gray-400">확인 중...</span>
-  if (available === true) return <span className="text-xs text-blue-600">사용 가능합니다.</span>
-  if (available === false) return <span className="text-xs text-red-500">이미 사용 중입니다.</span>
-  return null
-}
-
 export default function LoginModal({ onClose }) {
   const [mode, setMode] = useState('login')
-  const [emailStatus, setEmailStatus] = useState({ checking: false, available: null })
-  const [nicknameStatus, setNicknameStatus] = useState({ checking: false, available: null })
+  const [emailStatus, setEmailStatus] = useState(null)   // null | 'checking' | 'ok' | 'taken'
+  const [nicknameStatus, setNicknameStatus] = useState(null)
   const login = useAuthStore((s) => s.login)
 
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, touchedFields },
     setError,
+    clearErrors,
     reset,
-    getValues,
   } = useForm({
     defaultValues: { email: '', password: '', nickname: '' },
-    mode: 'onBlur',
+    mode: 'onTouched',
   })
 
   function switchMode(next) {
     setMode(next)
-    setEmailStatus({ checking: false, available: null })
-    setNicknameStatus({ checking: false, available: null })
+    setEmailStatus(null)
+    setNicknameStatus(null)
     reset()
   }
 
-  async function checkEmail(val) {
+  async function handleEmailBlur(val, field) {
+    field.onBlur()
     if (!val || !EMAIL_RE.test(val)) return
-    setEmailStatus({ checking: true, available: null })
+    setEmailStatus('checking')
     try {
       const { data } = await api.get(`/auth/check-email?email=${encodeURIComponent(val)}`)
-      setEmailStatus({ checking: false, available: data.available })
-      return data.available || '이미 사용 중인 이메일입니다.'
+      setEmailStatus(data.available ? 'ok' : 'taken')
+      if (!data.available) setError('email', { message: '이미 사용 중인 이메일입니다.' })
+      else clearErrors('email')
     } catch {
-      setEmailStatus({ checking: false, available: null })
+      setEmailStatus(null)
     }
   }
 
-  async function checkNickname(val) {
-    if (!val || val.trim().length < 2) return
-    setNicknameStatus({ checking: true, available: null })
+  async function handleNicknameBlur(val, field) {
+    field.onBlur()
+    const trimmed = val?.trim()
+    if (!trimmed || trimmed.length < 2) return
+    setNicknameStatus('checking')
     try {
-      const { data } = await api.get(`/auth/check-nickname?nickname=${encodeURIComponent(val.trim())}`)
-      setNicknameStatus({ checking: false, available: data.available })
-      return data.available || '이미 사용 중인 별명입니다.'
+      const { data } = await api.get(`/auth/check-nickname?nickname=${encodeURIComponent(trimmed)}`)
+      setNicknameStatus(data.available ? 'ok' : 'taken')
+      if (!data.available) setError('nickname', { message: '이미 사용 중인 별명입니다.' })
+      else clearErrors('nickname')
     } catch {
-      setNicknameStatus({ checking: false, available: null })
+      setNicknameStatus(null)
     }
   }
 
   async function onSubmit(values) {
     if (mode === 'signup') {
-      if (emailStatus.available === false) return setError('email', { message: '이미 사용 중인 이메일입니다.' })
-      if (nicknameStatus.available === false) return setError('nickname', { message: '이미 사용 중인 별명입니다.' })
+      if (emailStatus === 'taken') return setError('email', { message: '이미 사용 중인 이메일입니다.' })
+      if (nicknameStatus === 'taken') return setError('nickname', { message: '이미 사용 중인 별명입니다.' })
     }
     try {
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/signup'
@@ -87,6 +85,21 @@ export default function LoginModal({ onClose }) {
     }
   }
 
+  function fieldClass(name, status) {
+    const hasError = touchedFields[name] && errors[name]
+    const isOk = status === 'ok'
+    if (hasError) return 'border-red-400 focus:border-red-400 focus:ring-red-200'
+    if (isOk) return 'border-blue-400 focus:border-blue-500 focus:ring-blue-200'
+    return 'border-gray-200 focus:border-blue-500 focus:ring-blue-200'
+  }
+
+  function StatusMsg({ name, status }) {
+    if (status === 'checking') return <p className="text-xs text-gray-400">확인 중...</p>
+    if (touchedFields[name] && errors[name]) return <p className="text-xs text-red-500">{errors[name].message}</p>
+    if (status === 'ok') return <p className="text-xs text-blue-600">사용 가능합니다.</p>
+    return null
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
@@ -99,7 +112,8 @@ export default function LoginModal({ onClose }) {
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
           {mode === 'login' ? '로그인' : '회원가입'}
         </h2>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
 
           {/* 이메일 */}
           <Controller
@@ -108,7 +122,6 @@ export default function LoginModal({ onClose }) {
             rules={{
               required: '이메일을 입력해주세요.',
               pattern: { value: EMAIL_RE, message: '올바른 이메일 형식이 아닙니다.' },
-              validate: mode === 'signup' ? checkEmail : undefined,
             }}
             render={({ field }) => (
               <div>
@@ -116,20 +129,16 @@ export default function LoginModal({ onClose }) {
                   {...field}
                   type="email"
                   placeholder="이메일"
-                  onChange={(e) => {
-                    field.onChange(e)
-                    setEmailStatus({ checking: false, available: null })
-                  }}
-                  className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${
-                    errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-300'
-                    : emailStatus.available ? 'border-blue-400 focus:border-blue-600 focus:ring-blue-300'
-                    : 'border-gray-200 focus:border-blue-600 focus:ring-blue-500'
-                  }`}
+                  onBlur={(e) =>
+                    mode === 'signup'
+                      ? handleEmailBlur(e.target.value, field)
+                      : field.onBlur()
+                  }
+                  onChange={(e) => { field.onChange(e); setEmailStatus(null); clearErrors('email') }}
+                  className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${fieldClass('email', emailStatus)}`}
                 />
-                <div className="mt-1 min-h-[1rem]">
-                  {errors.email
-                    ? <p className="text-xs text-red-500">{errors.email.message}</p>
-                    : mode === 'signup' && <FieldStatus {...emailStatus} />}
+                <div className="mt-0.5 h-4">
+                  <StatusMsg name="email" status={emailStatus} />
                 </div>
               </div>
             )}
@@ -142,9 +151,8 @@ export default function LoginModal({ onClose }) {
               control={control}
               rules={{
                 required: '별명을 입력해주세요.',
-                minLength: { value: 2, message: '별명은 2자 이상이어야 합니다.' },
+                minLength: { value: 2, message: '2자 이상 입력해주세요.' },
                 maxLength: { value: 50, message: '50자 이하로 입력해주세요.' },
-                validate: checkNickname,
               }}
               render={({ field }) => (
                 <div>
@@ -152,20 +160,12 @@ export default function LoginModal({ onClose }) {
                     {...field}
                     type="text"
                     placeholder="별명 (2~50자)"
-                    onChange={(e) => {
-                      field.onChange(e)
-                      setNicknameStatus({ checking: false, available: null })
-                    }}
-                    className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${
-                      errors.nickname ? 'border-red-400 focus:border-red-400 focus:ring-red-300'
-                      : nicknameStatus.available ? 'border-blue-400 focus:border-blue-600 focus:ring-blue-300'
-                      : 'border-gray-200 focus:border-blue-600 focus:ring-blue-500'
-                    }`}
+                    onBlur={(e) => handleNicknameBlur(e.target.value, field)}
+                    onChange={(e) => { field.onChange(e); setNicknameStatus(null); clearErrors('nickname') }}
+                    className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${fieldClass('nickname', nicknameStatus)}`}
                   />
-                  <div className="mt-1 min-h-[1rem]">
-                    {errors.nickname
-                      ? <p className="text-xs text-red-500">{errors.nickname.message}</p>
-                      : <FieldStatus {...nicknameStatus} />}
+                  <div className="mt-0.5 h-4">
+                    <StatusMsg name="nickname" status={nicknameStatus} />
                   </div>
                 </div>
               )}
@@ -179,10 +179,10 @@ export default function LoginModal({ onClose }) {
             rules={{
               required: '비밀번호를 입력해주세요.',
               ...(mode === 'signup' && {
-                minLength: { value: 8, message: '비밀번호는 8자 이상이어야 합니다.' },
+                minLength: { value: 8, message: '8자 이상 입력해주세요.' },
                 validate: (v) => {
-                  if (!/[A-Za-z]/.test(v)) return '비밀번호에 영문자를 포함해주세요.'
-                  if (!/[0-9]/.test(v)) return '비밀번호에 숫자를 포함해주세요.'
+                  if (!/[A-Za-z]/.test(v)) return '영문자를 포함해주세요.'
+                  if (!/[0-9]/.test(v)) return '숫자를 포함해주세요.'
                   return true
                 },
               }),
@@ -193,22 +193,25 @@ export default function LoginModal({ onClose }) {
                   {...field}
                   type="password"
                   placeholder={mode === 'signup' ? '비밀번호 (8자 이상, 영문+숫자)' : '비밀번호'}
-                  className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${
-                    errors.password ? 'border-red-400 focus:border-red-400 focus:ring-red-300'
-                    : 'border-gray-200 focus:border-blue-600 focus:ring-blue-500'
-                  }`}
+                  className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${fieldClass('password', null)}`}
                 />
-                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+                <div className="mt-0.5 h-4">
+                  {touchedFields.password && errors.password && (
+                    <p className="text-xs text-red-500">{errors.password.message}</p>
+                  )}
+                </div>
               </div>
             )}
           />
 
-          {errors.root && <p className="text-xs text-red-500">{errors.root.message}</p>}
+          {errors.root && (
+            <p className="text-xs text-red-500">{errors.root.message}</p>
+          )}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-md bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="mt-1 rounded-md bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {isSubmitting
               ? mode === 'login' ? '로그인 중...' : '가입 중...'
@@ -216,7 +219,7 @@ export default function LoginModal({ onClose }) {
           </button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-gray-500">
+        <p className="mt-3 text-center text-xs text-gray-500">
           {mode === 'login' ? (
             <>
               아직 회원이 아니신가요?{' '}
