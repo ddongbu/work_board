@@ -23,6 +23,24 @@ function reducer(state, action) {
   }
 }
 
+// 업로드 전 클라이언트 사이드 이미지 압축 (최대 1200px, JPEG 80%)
+async function compressImage(file, maxWidth = 1200, quality = 0.8) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      const scale = Math.min(1, maxWidth / img.width)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob((blob) => resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })), 'image/jpeg', quality)
+    }
+    img.src = objectUrl
+  })
+}
+
 export default function PostWrite() {
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -65,8 +83,9 @@ export default function PostWrite() {
     if (!file || !file.type.startsWith('image/')) return
     dispatch({ type: 'setUploading', value: true })
     try {
+      const compressed = await compressImage(file)
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressed)
       const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
       const imageMarkdown = `\n![image](${res.data.url})\n`
 
@@ -97,8 +116,9 @@ export default function PostWrite() {
     if (!file) return
     dispatch({ type: 'setUploading', value: true })
     try {
+      const compressed = await compressImage(file)
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressed)
       const res = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
       dispatch({ type: 'setField', field: 'thumbnailUrl', value: res.data.url })
     } catch {

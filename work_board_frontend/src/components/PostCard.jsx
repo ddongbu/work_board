@@ -31,6 +31,7 @@ export default function PostCard({ post }) {
         <img
           src={post.thumbnail_url}
           alt={post.title}
+          loading="lazy"
           className="w-full aspect-video object-cover"
         />
       ) : (
