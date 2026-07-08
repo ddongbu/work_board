@@ -65,6 +65,7 @@ class PostListItem(BaseModel):
     created_at: datetime
     summary: str
     author_nickname: str
+    like_count: int = 0
 
     class Config:
         from_attributes = True
