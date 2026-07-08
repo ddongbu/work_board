@@ -25,6 +25,7 @@ class User(Base):
         primary_key=True,
     )
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    nickname: Mapped[str] = mapped_column(String(50), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=text('NOW()')
     )
@@ -72,6 +73,7 @@ class Post(Base):
         Identity(always=True, start=1, increment=1),
         primary_key=True,
     )
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('app.user.id', ondelete='CASCADE'), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)

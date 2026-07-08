@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_database_session
 from app.core.redis_client import get_redis
 from app.core.security import create_access_token, create_refresh_token, decode_token
-from app.api.auth.schema import SignupRequest, LoginRequest, TokenResponse
+from app.api.auth.schema import SignupRequest, LoginRequest, TokenResponse, UserResponse
 from app.api.auth import service
 
 router = APIRouter()
@@ -37,7 +37,7 @@ async def signup(
     db: AsyncSession = Depends(get_database_session),
     redis=Depends(get_redis),
 ):
-    user = await service.create_user(db, body.email, body.password)
+    user = await service.create_user(db, body.email, body.password, body.nickname)
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
     await service.save_refresh_token(redis, user.id, refresh_token)
@@ -83,6 +83,24 @@ async def logout(
             pass
     response.delete_cookie(REFRESH_COOKIE)
     return {"message": "로그아웃 완료"}
+
+
+@router.get("/owner", response_model=UserResponse)
+async def owner(db: AsyncSession = Depends(get_database_session)):
+    from sqlalchemy import select
+    from app.core.models import User
+    result = await db.execute(select(User).order_by(User.id).limit(1))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자 없음")
+    return UserResponse(id=user.id, email=user.email, nickname=user.nickname)
+
+
+@router.get("/me", response_model=UserResponse)
+async def me(
+    current_user=Depends(get_current_user),
+):
+    return UserResponse(id=current_user.id, email=current_user.email, nickname=current_user.nickname)
 
 
 @router.post("/refresh", response_model=TokenResponse)

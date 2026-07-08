@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
 
+    # AWS S3
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_S3_BUCKET: str = ""
+    AWS_S3_REGION: str = "ap-northeast-2"
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def CORS_ORIGINS_LIST(self) -> list[str]:

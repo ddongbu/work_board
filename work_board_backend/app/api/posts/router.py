@@ -17,16 +17,7 @@ async def list_posts(
 ):
     items, total = await service.get_posts(db, page, size)
     return PostListResponse(
-        items=[
-            PostListItem(
-                id=p.id,
-                title=p.title,
-                thumbnail_url=p.thumbnail_url,
-                created_at=p.created_at,
-                summary=service.make_summary(p.content),
-            )
-            for p in items
-        ],
+        items=[PostListItem(**item) for item in items],
         total=total,
         page=page,
         size=size,
@@ -40,9 +31,18 @@ async def create_post(
     current_user=Depends(get_current_user),
 ):
     post = await service.create_post(
-        db, body.title, body.content, body.thumbnail_url, body.is_published
+        db, current_user.id, body.title, body.content, body.thumbnail_url, body.is_published
     )
-    return PostResponse.model_validate(post)
+    return PostResponse(
+        id=post.id,
+        title=post.title,
+        content=post.content,
+        thumbnail_url=post.thumbnail_url,
+        is_published=post.is_published,
+        created_at=post.created_at,
+        updated_at=post.updated_at,
+        author_nickname=current_user.nickname,
+    )
 
 
 @router.get("/{post_id}", response_model=PostResponse)
@@ -50,10 +50,20 @@ async def get_post(
     post_id: int,
     db: AsyncSession = Depends(get_database_session),
 ):
-    post = await service.get_post(db, post_id)
-    if not post:
+    result = await service.get_post(db, post_id)
+    if not result:
         raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다")
-    return PostResponse.model_validate(post)
+    post, nickname = result
+    return PostResponse(
+        id=post.id,
+        title=post.title,
+        content=post.content,
+        thumbnail_url=post.thumbnail_url,
+        is_published=post.is_published,
+        created_at=post.created_at,
+        updated_at=post.updated_at,
+        author_nickname=nickname,
+    )
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

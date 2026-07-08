@@ -18,6 +18,7 @@ class PostResponse(BaseModel):
     is_published: bool
     created_at: datetime
     updated_at: datetime
+    author_nickname: str
 
     class Config:
         from_attributes = True
@@ -29,6 +30,7 @@ class PostListItem(BaseModel):
     thumbnail_url: Optional[str]
     created_at: datetime
     summary: str
+    author_nickname: str
 
     class Config:
         from_attributes = True

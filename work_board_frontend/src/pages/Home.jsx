@@ -52,30 +52,22 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <section>
-        <h2 className="mb-4 text-lg font-semibold text-[#1F2328]">최근 글</h2>
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        {!loading && !error && posts.length === 0 && (
-          <p className="text-sm text-[#636C76]">아직 작성된 글이 없습니다.</p>
-        )}
-        {posts.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </div>
-        )}
-        {loading && (
-          <p className="mt-6 text-center text-sm text-[#636C76]">불러오는 중...</p>
-        )}
-        {!hasMore && posts.length > 0 && (
-          <p className="mt-6 text-center text-sm text-[#636C76]">
-            모든 글을 불러왔습니다.
-          </p>
-        )}
-        <div ref={sentinelRef} className="h-1" />
-      </section>
+    <main className="mx-auto max-w-6xl px-6 py-10">
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {!loading && !error && posts.length === 0 && (
+        <p className="text-sm text-gray-400">아직 작성된 글이 없습니다.</p>
+      )}
+      {posts.length > 0 && (
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+      )}
+      {loading && (
+        <p className="mt-6 text-center text-sm text-gray-400">불러오는 중...</p>
+      )}
+      <div ref={sentinelRef} className="h-1" />
     </main>
   )
 }

@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
+    nickname: str
 
 
 class LoginRequest(BaseModel):
@@ -14,3 +15,9 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    nickname: str

@@ -1,25 +1,37 @@
-import { useState } from 'react'
+import { useReducer } from 'react'
 import { useNavigate } from 'react-router-dom'
 import MDEditor from '@uiw/react-md-editor'
 import api from '../services/api'
-import { uploadImage } from '../services/firebase'
 import { useAuthStore } from '../store/authStore'
+
+const initialState = {
+  title: '',
+  content: '',
+  thumbnailUrl: '',
+  uploading: false,
+  submitting: false,
+}
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'setField':      return { ...state, [action.field]: action.value }
+    case 'setUploading':  return { ...state, uploading: action.value }
+    case 'setSubmitting': return { ...state, submitting: action.value }
+    default:              return state
+  }
+}
 
 export default function PostWrite() {
   const navigate = useNavigate()
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [thumbnailUrl, setThumbnailUrl] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const token = useAuthStore((s) => s.token)
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const { title, content, thumbnailUrl, uploading, submitting } = state
 
-  if (!isLoggedIn) {
+  if (!token) {
     return (
-      <div className="flex flex-col items-center justify-center pt-32 gap-4">
+      <div className="flex flex-col items-center justify-center pt-32 gap-4 px-4">
         <p className="text-gray-500">로그인이 필요합니다.</p>
-        <button onClick={() => navigate('/')}
-          className="text-green-500 hover:underline text-sm">홈으로</button>
+        <button onClick={() => navigate('/')} className="text-green-500 hover:underline text-sm">홈으로</button>
       </div>
     )
   }
@@ -27,21 +39,25 @@ export default function PostWrite() {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    setUploading(true)
+    dispatch({ type: 'setUploading', value: true })
     try {
-      const url = await uploadImage(file)
-      setThumbnailUrl(url)
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      dispatch({ type: 'setField', field: 'thumbnailUrl', value: res.data.url })
     } catch {
       alert('이미지 업로드에 실패했습니다.')
     } finally {
-      setUploading(false)
+      dispatch({ type: 'setUploading', value: false })
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim() || !content.trim()) return
-    setSubmitting(true)
+    dispatch({ type: 'setSubmitting', value: true })
     try {
       const res = await api.post('/posts', {
         title,
@@ -53,19 +69,19 @@ export default function PostWrite() {
     } catch {
       alert('글 등록에 실패했습니다. 다시 시도해주세요.')
     } finally {
-      setSubmitting(false)
+      dispatch({ type: 'setSubmitting', value: false })
     }
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 pt-20 pb-16">
+    <main className="max-w-4xl mx-auto px-4 pt-10 pb-16">
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
           placeholder="제목을 입력하세요"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full text-3xl font-bold border-none outline-none placeholder-gray-300 py-4"
+          onChange={(e) => dispatch({ type: 'setField', field: 'title', value: e.target.value })}
+          className="w-full text-2xl sm:text-3xl font-bold border-none outline-none placeholder-gray-300 py-4"
           required
         />
         <div className="flex items-center gap-3">
@@ -74,14 +90,13 @@ export default function PostWrite() {
             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </label>
           {thumbnailUrl && (
-            <img src={thumbnailUrl} alt="썸네일 미리보기"
-              className="h-10 w-16 object-cover rounded" />
+            <img src={thumbnailUrl} alt="썸네일 미리보기" className="h-10 w-16 object-cover rounded" />
           )}
         </div>
         <div data-color-mode="light">
           <MDEditor
             value={content}
-            onChange={setContent}
+            onChange={(val) => dispatch({ type: 'setField', field: 'content', value: val ?? '' })}
             height={500}
           />
         </div>
