@@ -1,63 +1,58 @@
 ---
 DEV: DEV-002
-task: task-1
-title: 좋아요·댓글 DB 모델 및 백엔드 API
+task: task-2
+title: 게시글 상세 UI 개편 + 좋아요·댓글·수정 프론트엔드
 status: in-progress
 created: 2026-07-08
 ---
 
-# task-1: 좋아요·댓글·게시글 수정 백엔드
+# task-2: 프론트엔드 — PostDetail 개편 + 좋아요·댓글·게시글수정
 
 ## 배경
-게시글 상세 페이지에 좋아요(하트), 댓글/대댓글, 게시글 수정 기능이 없음.
-프론트에서 해당 API를 호출할 수 있도록 백엔드를 먼저 완성한다.
+PostDetail이 단순 렌더만 하고 수정/삭제가 하단에만 있음.
+스크린샷 기준으로 헤더(작성자·날짜·수정·삭제)와 왼쪽 사이드 좋아요, 하단 댓글 섹션을 추가한다.
 
 ## 아키텍처
 
 ```
-app.post_like  (post_id, user_id) UNIQUE
-app.comment    (id, post_id, user_id, parent_id nullable, content, created_at)
+PostDetail.jsx
+  ├── 헤더: 제목 / 작성자·날짜 (좌) + 수정·삭제 (우, 로그인+본인만)
+  ├── 왼쪽 플로팅: 하트 버튼 + 좋아요 수
+  ├── 본문: ReactMarkdown
+  └── CommentSection.jsx
+        ├── "N개의 댓글" 헤더
+        ├── 입력 폼 (로그인 시)
+        └── 댓글 목록 (CommentItem)
+              └── 대댓글 토글 + 대댓글 입력 폼
 
-POST   /posts/{id}/like                   → 좋아요 토글 (로그인 필요)
-GET    /posts/{id}/like                   → 좋아요 수 + 내 좋아요 여부
-GET    /posts/{id}/comments               → 댓글 목록 (대댓글 포함)
-POST   /posts/{id}/comments               → 댓글 작성 (로그인 필요)
-POST   /posts/{id}/comments/{cid}/replies → 대댓글 작성 (로그인 필요)
-DELETE /posts/{id}/comments/{cid}         → 댓글 삭제 (작성자만)
-PUT    /posts/{id}                        → 게시글 수정 (작성자만)
+PostWrite.jsx → 수정 모드 지원 (id param 있으면 PUT, 없으면 POST)
+App.jsx       → /posts/:id/edit 라우트 추가
 ```
 
 ## 구현 범위
 
-### 1. `app/core/models.py` (수정)
-- `PostLike`: post_id FK, user_id FK, UniqueConstraint(post_id, user_id)
-- `Comment`: post_id FK CASCADE, user_id FK CASCADE, parent_id nullable self-FK CASCADE, content Text
+### 1. `src/pages/PostDetail.jsx` (전면 개편)
+- 헤더: 제목, 작성자·날짜(좌), 수정·삭제(우, 본인만)
+- 왼쪽 사이드: 하트(♥) + count, 마운트 시 GET /posts/:id/like
+- 수정 버튼: /posts/:id/edit 이동
 
-### 2. `app/api/posts/schema.py` (수정)
-- `PostUpdate`: title/content/thumbnail_url/is_published 모두 optional
-- `LikeResponse`: count, liked
-- `CommentCreate`: content (1~1000자), parent_id optional
-- `CommentResponse`: id, author_nickname, content, created_at, replies[]
+### 2. `src/components/CommentSection.jsx` (신규)
+- 댓글 수 표시, textarea 폼, 댓글 목록
+- 대댓글: "N개의 답글" 버튼 클릭 시 토글, 대댓글 입력 폼
 
-### 3. `app/api/posts/service.py` (수정)
-- `toggle_like`, `get_like_status`, `update_post`
-- `get_comments`, `create_comment`, `delete_comment`
+### 3. `src/pages/PostWrite.jsx` (수정 모드 추가)
+- useParams로 id 감지 → id 있으면 기존 글 로드(GET) 후 PUT 제출
+- /posts/:id/edit 경로에서 재사용
 
-### 4. `app/api/posts/router.py` (수정)
-- 엔드포인트 7개 추가
-- PUT /{post_id}: 작성자만 수정 (403 체크)
-- DELETE 댓글: 작성자만 삭제 (403 체크)
+### 4. `src/App.jsx` (수정)
+- `/posts/:id/edit` 라우트 추가
 
 ## 주의사항
-- `Base.metadata.create_all`이 lifespan에서 자동 실행 → 신규 테이블은 별도 마이그레이션 불필요
-- 댓글 depth는 1단계 (대댓글의 대댓글 없음) — parent_id 있으면 최상위 댓글만 parent로 허용
-- 좋아요 토글: 이미 존재하면 삭제, 없으면 추가
-- 대댓글 삭제 시 부모 댓글 삭제 시 CASCADE 적용
+- 좋아요는 비로그인도 수 확인 가능, 클릭은 로그인 필요
+- 수정/삭제 버튼은 post.user_id 대신 authStore 닉네임으로 본인 확인 불가 → API가 403 반환하면 alert
+- CommentSection은 PostDetail에서 post_id prop으로 받음
 
 ## 검증
-```bash
-curl -X PUT http://localhost:8000/posts/1 -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" -d '{"title":"수정된 제목"}'
-curl -X POST http://localhost:8000/posts/1/like -H "Authorization: Bearer <token>"
-curl http://localhost:8000/posts/1/comments
-```
+- 비로그인: 좋아요 수 보임, 하트 클릭 시 로그인 모달 유도
+- 로그인: 하트 클릭 시 토글, 댓글 작성 가능
+- 본인 글: 수정/삭제 버튼 노출
