@@ -21,9 +21,10 @@ export default function Home() {
 
     try {
       const { data } = await api.get(`/posts?page=${page}&size=${SIZE}`)
-      const newHasMore = page * SIZE < data.total
+      const items = data.items ?? []
+      const newHasMore = page * SIZE < (data.total ?? 0)
 
-      setPosts((prev) => (page === 1 ? data.items : [...prev, ...data.items]))
+      setPosts((prev) => (page === 1 ? items : [...prev, ...items]))
       setHasMore(newHasMore)
 
       stateRef.current.page = page + 1
