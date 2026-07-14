@@ -2,7 +2,7 @@
 DEV: DEV-003
 task: task-1
 title: 백엔드 — User 모델 + mypage 도메인 + upload 폴더 분기
-status: in-progress
+status: completed
 created: 2026-07-14
 ---
 
