@@ -56,4 +56,7 @@ export const changePassword = (current_password, new_password) =>
 
 export const deleteAccount = () => api.delete('/mypage/account')
 
+export const updateComment = (postId, commentId, content) =>
+  api.put(`/posts/${postId}/comments/${commentId}`, { content })
+
 export default api

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import api from '../services/api'
+import api, { updateComment } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 
 function formatDate(dateStr) {
@@ -23,11 +23,96 @@ function Avatar({ nickname }) {
   )
 }
 
+function ReplyItem({ reply, postId, onDeleted, currentNickname }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
+
+  const handleEdit = () => {
+    setEditText(reply.content)
+    setIsEditing(true)
+  }
+
+  const handleEditCancel = () => {
+    setIsEditing(false)
+    setEditText('')
+  }
+
+  const handleEditSave = async () => {
+    if (!editText.trim()) return
+    setEditSubmitting(true)
+    try {
+      await updateComment(postId, reply.id, editText)
+      setIsEditing(false)
+      onDeleted()
+    } catch {
+      alert('수정에 실패했습니다.')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('답글을 삭제하시겠습니까?')) return
+    try {
+      await api.delete(`/posts/${postId}/comments/${reply.id}`)
+      onDeleted()
+    } catch { alert('삭제에 실패했습니다.') }
+  }
+
+  return (
+    <div className="flex gap-3">
+      <Avatar nickname={reply.author_nickname} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-semibold text-gray-800">{reply.author_nickname}</span>
+          <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
+          {currentNickname === reply.author_nickname && (
+            <div className="flex items-center gap-2 ml-auto">
+              <button onClick={handleEdit} className="text-xs text-gray-300 hover:text-blue-400">수정</button>
+              <button onClick={handleDelete} className="text-xs text-gray-300 hover:text-red-400">삭제</button>
+            </div>
+          )}
+        </div>
+        {isEditing ? (
+          <div className="mt-1">
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              rows={2}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 resize-none"
+            />
+            <div className="flex gap-2 mt-1.5 justify-end">
+              <button
+                onClick={handleEditCancel}
+                className="px-3 py-1 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50"
+              >취소</button>
+              <button
+                onClick={handleEditSave}
+                disabled={editSubmitting || !editText.trim()}
+                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {editSubmitting ? '...' : '저장'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{reply.content}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function CommentItem({ comment, postId, onDeleted, currentNickname }) {
   const [showReplies, setShowReplies] = useState(false)
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  // 수정 상태
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
   const token = useAuthStore((s) => s.token)
 
   const submitReply = async () => {
@@ -56,6 +141,30 @@ function CommentItem({ comment, postId, onDeleted, currentNickname }) {
     }
   }
 
+  const handleEdit = () => {
+    setEditText(comment.content)
+    setIsEditing(true)
+  }
+
+  const handleEditCancel = () => {
+    setIsEditing(false)
+    setEditText('')
+  }
+
+  const handleEditSave = async () => {
+    if (!editText.trim()) return
+    setEditSubmitting(true)
+    try {
+      await updateComment(postId, comment.id, editText)
+      setIsEditing(false)
+      onDeleted()
+    } catch {
+      alert('수정에 실패했습니다.')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
   return (
     <div className="py-5 border-b border-gray-100 last:border-0">
       <div className="flex gap-3">
@@ -65,10 +174,44 @@ function CommentItem({ comment, postId, onDeleted, currentNickname }) {
             <span className="text-sm font-semibold text-gray-800">{comment.author_nickname}</span>
             <span className="text-xs text-gray-400">{formatDate(comment.created_at)}</span>
             {currentNickname === comment.author_nickname && (
-              <button onClick={handleDelete} className="text-xs text-gray-300 hover:text-red-400 ml-auto">삭제</button>
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={handleEdit}
+                  className="text-xs text-gray-300 hover:text-blue-400"
+                >수정</button>
+                <button onClick={handleDelete} className="text-xs text-gray-300 hover:text-red-400">삭제</button>
+              </div>
             )}
           </div>
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+
+          {/* 수정 모드 */}
+          {isEditing ? (
+            <div className="mt-1">
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                rows={3}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 resize-none"
+              />
+              <div className="flex gap-2 mt-1.5 justify-end">
+                <button
+                  onClick={handleEditCancel}
+                  className="px-3 py-1 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  disabled={editSubmitting || !editText.trim()}
+                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {editSubmitting ? '...' : '저장'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+          )}
 
           <div className="flex items-center gap-4 mt-2">
             {token && (
@@ -119,28 +262,13 @@ function CommentItem({ comment, postId, onDeleted, currentNickname }) {
           {showReplies && comment.replies?.length > 0 && (
             <div className="mt-3 pl-4 border-l-2 border-gray-100 space-y-4">
               {comment.replies.map((reply) => (
-                <div key={reply.id} className="flex gap-3">
-                  <Avatar nickname={reply.author_nickname} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-semibold text-gray-800">{reply.author_nickname}</span>
-                      <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
-                      {currentNickname === reply.author_nickname && (
-                        <button
-                          onClick={async () => {
-                            if (!confirm('답글을 삭제하시겠습니까?')) return
-                            try {
-                              await api.delete(`/posts/${postId}/comments/${reply.id}`)
-                              onDeleted()
-                            } catch { alert('삭제에 실패했습니다.') }
-                          }}
-                          className="text-xs text-gray-300 hover:text-red-400 ml-auto"
-                        >삭제</button>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{reply.content}</p>
-                  </div>
-                </div>
+                <ReplyItem
+                  key={reply.id}
+                  reply={reply}
+                  postId={postId}
+                  onDeleted={onDeleted}
+                  currentNickname={currentNickname}
+                />
               ))}
             </div>
           )}

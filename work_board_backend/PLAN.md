@@ -1,8 +1,8 @@
 ---
 DEV: DEV-004
-task: task-1
-title: 백엔드 댓글 수정 API
-status: completed
+task: task-2
+title: 프론트엔드 CommentSection 인라인 수정 UI
+status: in-progress
 created: 2026-07-14
 ---
 
