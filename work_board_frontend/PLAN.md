@@ -2,7 +2,7 @@
 DEV: DEV-003
 task: task-2
 title: 프론트엔드 — 헤더 드롭다운 + 설정 페이지
-status: in-progress
+status: completed
 created: 2026-07-14
 ---
 
