@@ -49,3 +49,4 @@ class UserResponse(BaseModel):
     id: int
     email: str
     nickname: str
+    profile_image_url: str | None = None

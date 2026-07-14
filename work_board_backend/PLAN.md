@@ -1,39 +1,27 @@
 ---
-DEV: DEV-001
+DEV: DEV-003
 task: task-1
-title: 백엔드 PostListItem summary 필드 추가
+title: 백엔드 — User 모델 + mypage 도메인 + upload 폴더 분기
 status: completed
-created: 2026-07-08
+created: 2026-07-14
 ---
 
-# task-1: 백엔드 PostListItem summary 필드 추가
+# task-1: 백엔드 마이페이지 API
 
 ## 배경
-메인화면 피드에 게시글 요약을 표시하기 위해 목록 API 응답에 summary 필드가 필요.
-DB 컬럼 추가 없이 content에서 마크다운 제거 후 앞 150자를 런타임 계산.
-
-## 아키텍처
-service.py에 make_summary() 헬퍼 추가 → router.py에서 PostListItem 생성 시 호출.
+마이페이지 기능 구현을 위해 User 모델에 profile_image_url 컬럼을 추가하고,
+프로필 수정·비밀번호 변경·회원 탈퇴 API를 신규 도메인으로 분리한다.
 
 ## 구현 범위
-### 1. schema.py — PostListItem에 summary: str 추가
-### 2. service.py — make_summary(content) 함수 추가
-### 3. router.py — model_validate(p) → 명시적 생성으로 변경
+- app/core/models.py: User.profile_image_url 컬럼 추가
+- app/api/auth/schema.py: UserResponse에 profile_image_url 포함
+- app/api/upload/router.py: folder 파라미터로 posts/ vs profiles/ 분기
+- app/api/mypage/: 신규 도메인 (schema, service, router)
+- app/main.py: mypage 라우터 등록
 
 ## 검증
-```bash
-python3 -c "
-import re, sys
-sys.path.insert(0, '.')
-from app.api.posts.service import make_summary
-assert make_summary('# 제목\n\n**굵게** 텍스트') == '제목 굵게 텍스트', 'markdown 미제거'
-assert make_summary('a' * 200).endswith('...'), '150자 초과 말줄임 실패'
-assert make_summary('') == '', '빈 문자열 실패'
-print('OK')
-"
-```
-
-## 주의사항
-- DB 컬럼 추가 없음, 라이브러리 추가 없음
-- Post ORM 모델에 summary 컬럼이 없으므로 model_validate(p) 대신 명시적 생성 사용
-- Task 2, 3(프론트엔드)이 이 필드를 사용하므로 인터페이스 변경 시 협의 필요
+서버 기동 후:
+- POST /upload?folder=profiles 로 이미지 업로드 확인
+- PUT /mypage/profile 로 닉네임+이미지 변경 확인
+- PUT /mypage/password 로 비밀번호 변경 확인
+- DELETE /mypage/account 로 계정 삭제 확인
