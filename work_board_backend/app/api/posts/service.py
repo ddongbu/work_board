@@ -203,9 +203,7 @@ async def delete_comment(db: AsyncSession, comment_id: int) -> None:
         await db.commit()
 
 
-async def update_comment(db: AsyncSession, comment_id: int, content: str) -> Comment:
-    result = await db.execute(select(Comment).where(Comment.id == comment_id))
-    comment = result.scalar_one()
+async def update_comment(db: AsyncSession, comment: Comment, content: str) -> Comment:
     comment.content = content
     comment.updated_at = datetime.datetime.utcnow()
     await db.commit()
