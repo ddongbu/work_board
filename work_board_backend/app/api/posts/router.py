@@ -5,7 +5,7 @@ from app.core.db import get_database_session
 from app.api.auth.router import get_current_user
 from app.api.posts.schema import (
     PostCreate, PostUpdate, PostResponse, PostListResponse, PostListItem,
-    LikeResponse, CommentCreate, CommentResponse,
+    LikeResponse, CommentCreate, CommentResponse, CommentUpdate, CommentUpdateResponse,
 )
 from app.api.posts import service
 
@@ -188,6 +188,31 @@ async def create_comment(
         parent_id=comment.parent_id,
         replies=[],
     )
+
+
+@router.put("/{post_id}/comments/{comment_id}", response_model=CommentUpdateResponse)
+async def update_comment(
+    post_id: int,
+    comment_id: int,
+    body: CommentUpdate,
+    db: AsyncSession = Depends(get_database_session),
+    current_user=Depends(get_current_user),
+):
+    result = await service.get_post(db, post_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="글을 찾을 수 없습니다.")
+    from sqlalchemy import select as sa_select
+    from app.core.models import Comment
+    comment_result = await db.execute(
+        sa_select(Comment).where(Comment.id == comment_id, Comment.post_id == post_id)
+    )
+    comment = comment_result.scalar_one_or_none()
+    if not comment:
+        raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다.")
+    if comment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="수정 권한이 없습니다.")
+    updated = await service.update_comment(db, comment_id, body.content)
+    return CommentUpdateResponse(id=updated.id, content=updated.content, updated_at=updated.updated_at)
 
 
 @router.delete("/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
