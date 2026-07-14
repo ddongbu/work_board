@@ -201,3 +201,13 @@ async def delete_comment(db: AsyncSession, comment_id: int) -> None:
     if comment:
         await db.delete(comment)
         await db.commit()
+
+
+async def update_comment(db: AsyncSession, comment_id: int, content: str) -> Comment:
+    result = await db.execute(select(Comment).where(Comment.id == comment_id))
+    comment = result.scalar_one()
+    comment.content = content
+    comment.updated_at = datetime.datetime.utcnow()
+    await db.commit()
+    await db.refresh(comment)
+    return comment
