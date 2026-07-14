@@ -1,7 +1,7 @@
 ---
 DEV: DEV-004
-task: task-2
-title: 프론트엔드 CommentSection 인라인 수정 UI
+task: task-3
+title: 로그인 모달 버그 수정 + 2-column 디자인
 status: in-progress
 created: 2026-07-14
 ---
