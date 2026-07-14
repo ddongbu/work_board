@@ -5,6 +5,13 @@ import { useAuthStore } from '../store/authStore'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+function StatusMsg({ name, status, touchedFields, errors }) {
+  if (status === 'checking') return <p className="text-xs text-gray-400">확인 중...</p>
+  if (touchedFields[name] && errors[name]) return <p className="text-xs text-red-500">{errors[name].message}</p>
+  if (status === 'ok') return <p className="text-xs text-blue-600">사용 가능합니다.</p>
+  return null
+}
+
 function GithubIcon() {
   return (
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -120,13 +127,6 @@ export default function LoginModal({ onClose }) {
     return 'border-gray-200 focus:border-blue-500 focus:ring-blue-200'
   }
 
-  function StatusMsg({ name, status }) {
-    if (status === 'checking') return <p className="text-xs text-gray-400">확인 중...</p>
-    if (touchedFields[name] && errors[name]) return <p className="text-xs text-red-500">{errors[name].message}</p>
-    if (status === 'ok') return <p className="text-xs text-blue-600">사용 가능합니다.</p>
-    return null
-  }
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
@@ -147,10 +147,10 @@ export default function LoginModal({ onClose }) {
             <h2 className="text-xl font-bold text-gray-800">
               {mode === 'login' ? '환영합니다!' : '함께해요!'}
             </h2>
-            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed text-center">
               {mode === 'login'
-                ? '로그인하고 다양한\n기술 글을 살펴보세요.'
-                : '지금 가입하고\n여러분의 이야기를 남겨보세요.'}
+                ? <>로그인하고 다양한<br />기술 글을 살펴보세요.</>
+                : <>지금 가입하고<br />여러분의 이야기를 남겨보세요.</>}
             </p>
           </div>
         </div>
@@ -185,7 +185,7 @@ export default function LoginModal({ onClose }) {
                     className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${fieldClass('email', emailStatus)}`}
                   />
                   <div className="mt-0.5 h-4">
-                    <StatusMsg name="email" status={emailStatus} />
+                    <StatusMsg name="email" status={emailStatus} touchedFields={touchedFields} errors={errors} />
                   </div>
                 </div>
               )}
@@ -212,7 +212,7 @@ export default function LoginModal({ onClose }) {
                       className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:ring-1 ${fieldClass('nickname', nicknameStatus)}`}
                     />
                     <div className="mt-0.5 h-4">
-                      <StatusMsg name="nickname" status={nicknameStatus} />
+                      <StatusMsg name="nickname" status={nicknameStatus} touchedFields={touchedFields} errors={errors} />
                     </div>
                   </div>
                 )}
