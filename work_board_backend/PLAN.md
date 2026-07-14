@@ -1,27 +1,24 @@
 ---
-DEV: DEV-003
-task: task-1
-title: 백엔드 — User 모델 + mypage 도메인 + upload 폴더 분기
-status: completed
+DEV: DEV-004
+task: task-3
+title: 로그인 모달 버그 수정 + 2-column 디자인
+status: in-progress
 created: 2026-07-14
 ---
 
-# task-1: 백엔드 마이페이지 API
+# task-1: 백엔드 — PUT /posts/{id}/comments/{comment_id}
 
 ## 배경
-마이페이지 기능 구현을 위해 User 모델에 profile_image_url 컬럼을 추가하고,
-프로필 수정·비밀번호 변경·회원 탈퇴 API를 신규 도메인으로 분리한다.
+댓글 수정 엔드포인트가 없어 작성 후 수정이 불가능함.
+
+## 아키텍처
+Comment 모델에 updated_at 추가, schema/service/router에 update 로직 추가.
 
 ## 구현 범위
-- app/core/models.py: User.profile_image_url 컬럼 추가
-- app/api/auth/schema.py: UserResponse에 profile_image_url 포함
-- app/api/upload/router.py: folder 파라미터로 posts/ vs profiles/ 분기
-- app/api/mypage/: 신규 도메인 (schema, service, router)
-- app/main.py: mypage 라우터 등록
+1. models.py: Comment.updated_at 추가
+2. schema.py: CommentUpdate, CommentUpdateResponse 추가
+3. service.py: update_comment 함수 추가
+4. router.py: PUT /{post_id}/comments/{comment_id} 엔드포인트 추가
 
 ## 검증
-서버 기동 후:
-- POST /upload?folder=profiles 로 이미지 업로드 확인
-- PUT /mypage/profile 로 닉네임+이미지 변경 확인
-- PUT /mypage/password 로 비밀번호 변경 확인
-- DELETE /mypage/account 로 계정 삭제 확인
+PUT /posts/{post_id}/comments/{comment_id} 호출 → 200 + 수정된 content 반환

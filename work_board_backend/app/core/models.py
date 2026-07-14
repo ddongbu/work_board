@@ -136,3 +136,6 @@ class Comment(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=text('NOW()')
     )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, server_default=text('NOW()')
+    )
