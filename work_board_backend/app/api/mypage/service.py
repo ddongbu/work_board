@@ -1,10 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from passlib.context import CryptContext
 
 from app.core.models import User, UserPassword
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.core.security import verify_password, hash_password
 
 
 async def update_profile(
@@ -33,13 +31,13 @@ async def change_password(
         .limit(1)
     )
     user_pw = result.scalar_one_or_none()
-    if not user_pw or not pwd_context.verify(current_password, user_pw.password_hash):
+    if not user_pw or not verify_password(current_password, user_pw.password_hash):
         return False
 
     user_pw.is_active = False
     new_pw = UserPassword(
         user_id=user.id,
-        password_hash=pwd_context.hash(new_password),
+        password_hash=hash_password(new_password),
         is_active=True,
     )
     db.add(new_pw)

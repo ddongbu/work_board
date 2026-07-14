@@ -23,6 +23,7 @@ export default function Settings() {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleteMsg, setDeleteMsg] = useState('')
 
   async function handleImageUpload(e) {
     const file = e.target.files?.[0]
@@ -39,6 +40,7 @@ export default function Settings() {
       setProfileMsg('업로드에 실패했습니다.')
     } finally {
       setProfileSaving(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -104,7 +106,7 @@ export default function Settings() {
       navigate('/')
     } catch {
       setDeleting(false)
-      setShowDeleteModal(false)
+      setDeleteMsg('탈퇴 처리 중 오류가 발생했습니다. 다시 시도해 주세요.')
     }
   }
 
@@ -262,6 +264,7 @@ export default function Settings() {
             <p className="text-sm text-gray-500 mb-6">
               탈퇴 시 작성한 모든 게시글과 댓글이 삭제되며 복구할 수 없습니다.
             </p>
+            {deleteMsg && <p className="text-sm text-red-500 mb-2">{deleteMsg}</p>}
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
