@@ -137,5 +137,5 @@ class Comment(Base):
         DateTime, server_default=text('NOW()')
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, server_default=text('NOW()'), onupdate=datetime.datetime.utcnow
+        DateTime, server_default=text('NOW()')
     )
