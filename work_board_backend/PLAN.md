@@ -2,7 +2,7 @@
 DEV: DEV-004
 task: task-1
 title: 백엔드 댓글 수정 API
-status: in-progress
+status: completed
 created: 2026-07-14
 ---
 
