@@ -2,7 +2,7 @@
 DEV: DEV-002
 task: task-2
 title: 게시글 상세 UI 개편 + 좋아요·댓글·수정 프론트엔드
-status: in-progress
+status: completed
 created: 2026-07-08
 ---
 
