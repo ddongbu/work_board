@@ -32,7 +32,7 @@ export default function Settings() {
     try {
       const res = await uploadImage(file, 'profiles')
       const url = res.data.url
-      await updateProfile(nickname, url)
+      await updateProfile(user?.nickname ?? '', url)
       updateUser({ profile_image_url: url })
       setProfileMsg('프로필 사진이 변경되었습니다.')
     } catch {
@@ -46,7 +46,7 @@ export default function Settings() {
     setProfileSaving(true)
     setProfileMsg('')
     try {
-      await updateProfile(nickname, null)
+      await updateProfile(user?.nickname ?? '', null)
       updateUser({ profile_image_url: null })
       setProfileMsg('프로필 사진이 제거되었습니다.')
     } catch {
@@ -228,7 +228,7 @@ export default function Settings() {
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
           {pwMsg && (
-            <p className={`text-sm ${pwMsg.includes('변경') ? 'text-green-600' : 'text-red-500'}`}>
+            <p className={`text-sm ${pwMsg.includes('되었습니다') ? 'text-green-600' : 'text-red-500'}`}>
               {pwMsg}
             </p>
           )}
