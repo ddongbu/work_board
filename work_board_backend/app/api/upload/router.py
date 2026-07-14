@@ -1,7 +1,7 @@
 import uuid
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
 from app.api.auth.router import get_current_user
 from app.core.config import settings
@@ -46,6 +46,7 @@ def _s3_client():
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def upload_image(
     file: UploadFile = File(...),
+    folder: str = Query("posts", pattern="^(posts|profiles)$"),
     _=Depends(get_current_user),
 ):
     if file.content_type not in ALLOWED_MIME_TYPES:
@@ -67,7 +68,7 @@ async def upload_image(
     if actual_mime is None or actual_mime not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="파일 내용이 선언된 형식과 일치하지 않습니다.")
 
-    safe_key = f"posts/{uuid.uuid4().hex}.{ext}"
+    safe_key = f"{folder}/{uuid.uuid4().hex}.{ext}"
 
     try:
         s3 = _s3_client()

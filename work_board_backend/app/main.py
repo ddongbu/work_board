@@ -60,6 +60,9 @@ api.include_router(posts_router, prefix="/posts", tags=["posts"])
 from app.api.upload.router import router as upload_router
 api.include_router(upload_router, prefix="/upload", tags=["upload"])
 
+from app.api.mypage.router import router as mypage_router
+api.include_router(mypage_router, prefix="/mypage", tags=["mypage"])
+
 app.include_router(api)
 
 

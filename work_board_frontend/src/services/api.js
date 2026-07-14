@@ -42,4 +42,18 @@ api.interceptors.response.use(
   }
 )
 
+export const uploadImage = (file, folder = 'posts') => {
+  const form = new FormData()
+  form.append('file', file)
+  return api.post(`/upload?folder=${folder}`, form)
+}
+
+export const updateProfile = (nickname, profile_image_url) =>
+  api.put('/mypage/profile', { nickname, profile_image_url })
+
+export const changePassword = (current_password, new_password) =>
+  api.put('/mypage/password', { current_password, new_password })
+
+export const deleteAccount = () => api.delete('/mypage/account')
+
 export default api

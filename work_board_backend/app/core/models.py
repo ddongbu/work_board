@@ -28,11 +28,12 @@ class User(Base):
     )
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     nickname: Mapped[str] = mapped_column(String(50), nullable=False)
+    profile_image_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, server_default=text('NOW()')
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, server_default=text('NOW()')
+        DateTime, server_default=text('NOW()'), onupdate=datetime.datetime.utcnow
     )
 
 
@@ -59,7 +60,7 @@ class UserPassword(Base):
         DateTime, server_default=text('NOW()')
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, server_default=text('NOW()')
+        DateTime, server_default=text('NOW()'), onupdate=datetime.datetime.utcnow
     )
 
 
