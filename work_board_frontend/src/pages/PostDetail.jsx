@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import api from '../services/api'
+import { setTitle } from '../utils/title'
 import { useAuthStore } from '../store/authStore'
 import CommentSection from '../components/CommentSection'
 
@@ -37,8 +38,8 @@ export default function PostDetail() {
 
   useEffect(() => {
     api.get(`/posts/${id}`)
-      .then((res) => dispatch({ type: 'success', post: res.data }))
-      .catch(() => { dispatch({ type: 'error' }); navigate('/') })
+      .then((res) => { dispatch({ type: 'success', post: res.data }); setTitle(res.data.title) })
+      .catch(() => { dispatch({ type: 'error' }); navigate('/404', { replace: true }) })
   }, [id])
 
   useEffect(() => {

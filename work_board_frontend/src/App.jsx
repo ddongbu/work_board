@@ -1,14 +1,32 @@
 import { useEffect } from 'react'
 import axios from 'axios'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { setTitle } from './utils/title'
 import Header from './components/Header'
 import Home from './pages/Home'
 import PostDetail from './pages/PostDetail'
 import PostWrite from './pages/PostWrite'
 import Settings from './pages/Settings'
+import NotFound from './pages/NotFound'
 import { useAuthStore } from './store/authStore'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+const STATIC_TITLES = {
+  '/': null,
+  '/write': '새글 작성',
+  '/settings': '설정',
+  '/404': '페이지를 찾을 수 없습니다',
+}
+
+function TitleManager() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const base = pathname.replace(/\/posts\/\d+.*/, '/posts/:id')
+    if (base in STATIC_TITLES) setTitle(STATIC_TITLES[base])
+  }, [pathname])
+  return null
+}
 
 function SettingsGuard() {
   const token = useAuthStore((s) => s.token)
@@ -36,6 +54,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <TitleManager />
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -43,6 +62,8 @@ export default function App() {
         <Route path="/posts/:id" element={<PostDetail />} />
         <Route path="/posts/:id/edit" element={<PostWrite />} />
         <Route path="/settings" element={<SettingsGuard />} />
+        <Route path="/404" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )
