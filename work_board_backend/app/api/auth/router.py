@@ -118,7 +118,12 @@ async def owner(db: AsyncSession = Depends(get_database_session)):
 async def me(
     current_user=Depends(get_current_user),
 ):
-    return UserResponse(id=current_user.id, email=current_user.email, nickname=current_user.nickname)
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        nickname=current_user.nickname,
+        profile_image_url=current_user.profile_image_url,
+    )
 
 
 @router.post("/refresh", response_model=TokenResponse)

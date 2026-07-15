@@ -151,3 +151,26 @@ class CommentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CommentUpdate(BaseModel):
+    content: str
+
+    @field_validator('content')
+    @classmethod
+    def content_validate(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError('댓글을 입력해주세요.')
+        if len(v) > 1000:
+            raise ValueError('댓글은 1000자 이하여야 합니다.')
+        return v
+
+
+class CommentUpdateResponse(BaseModel):
+    id: int
+    content: str
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

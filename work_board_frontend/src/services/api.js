@@ -22,7 +22,8 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
+    const isAuthEndpoint = original.url?.includes('/auth/login') || original.url?.includes('/auth/signup')
+    if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true
       try {
         const res = await axios.post(
@@ -41,5 +42,22 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+export const uploadImage = (file, folder = 'posts') => {
+  const form = new FormData()
+  form.append('file', file)
+  return api.post(`/upload?folder=${folder}`, form)
+}
+
+export const updateProfile = (nickname, profile_image_url) =>
+  api.put('/mypage/profile', { nickname, profile_image_url })
+
+export const changePassword = (current_password, new_password) =>
+  api.put('/mypage/password', { current_password, new_password })
+
+export const deleteAccount = () => api.delete('/mypage/account')
+
+export const updateComment = (postId, commentId, content) =>
+  api.put(`/posts/${postId}/comments/${commentId}`, { content })
 
 export default api

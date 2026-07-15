@@ -1,13 +1,24 @@
 import { useEffect } from 'react'
 import axios from 'axios'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import Header from './components/Header'
 import Home from './pages/Home'
 import PostDetail from './pages/PostDetail'
 import PostWrite from './pages/PostWrite'
+import Settings from './pages/Settings'
 import { useAuthStore } from './store/authStore'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+function SettingsGuard() {
+  const token = useAuthStore((s) => s.token)
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!token) navigate('/', { replace: true })
+  }, [token, navigate])
+  if (!token) return null
+  return <Settings />
+}
 
 export default function App() {
   const login = useAuthStore((s) => s.login)
@@ -31,6 +42,7 @@ export default function App() {
         <Route path="/write" element={<PostWrite />} />
         <Route path="/posts/:id" element={<PostDetail />} />
         <Route path="/posts/:id/edit" element={<PostWrite />} />
+        <Route path="/settings" element={<SettingsGuard />} />
       </Routes>
     </BrowserRouter>
   )
