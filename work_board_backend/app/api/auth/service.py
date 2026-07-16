@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +15,7 @@ async def create_user(db: AsyncSession, email: str, password: str, nickname: str
         await db.flush()
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=409, detail="이미 사용 중인 이메일입니다.")
+        raise ValueError("이미 사용 중인 이메일입니다.")
     user_pw = UserPassword(user_id=user.id, password_hash=hash_password(password))
     db.add(user_pw)
     await db.commit()

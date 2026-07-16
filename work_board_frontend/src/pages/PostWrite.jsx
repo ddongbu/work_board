@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import MDEditor from '@uiw/react-md-editor'
 import api from '../services/api'
 import { useAuthStore } from '../store/authStore'
+import { compressImage } from '../utils/image'
 
 const initialState = {
   title: '',
@@ -21,24 +22,6 @@ function reducer(state, action) {
     case 'setLoading':    return { ...state, loading: action.value }
     default:              return state
   }
-}
-
-// 업로드 전 클라이언트 사이드 이미지 압축 (최대 1200px, JPEG 80%)
-async function compressImage(file, maxWidth = 1200, quality = 0.8) {
-  return new Promise((resolve) => {
-    const img = new Image()
-    const objectUrl = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl)
-      const scale = Math.min(1, maxWidth / img.width)
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob((blob) => resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })), 'image/jpeg', quality)
-    }
-    img.src = objectUrl
-  })
 }
 
 export default function PostWrite() {

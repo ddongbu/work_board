@@ -1,17 +1,21 @@
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from contextlib import asynccontextmanager
 from loguru import logger
 from sqlalchemy import text
 
 from app.core.config import settings
-from app.logger import init_logger
 from app.core.db import db_manager
 from app.core.models import Base
 from app.core.redis_client import init_redis, close_redis
+from app.logger import init_logger
+from app.api.auth.router import router as auth_router
+from app.api.posts.router import router as posts_router
+from app.api.upload.router import router as upload_router
+from app.api.mypage.router import router as mypage_router
 
 
 @asynccontextmanager
@@ -30,9 +34,11 @@ app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    errors = exc.errors()
-    messages = [e.get("msg", "유효하지 않은 값입니다.") for e in errors]
-    return JSONResponse(status_code=422, content={"detail": messages[0] if messages else "입력값이 올바르지 않습니다."})
+    messages = [e.get("msg", "유효하지 않은 값입니다.") for e in exc.errors()]
+    return JSONResponse(
+        status_code=422,
+        content={"detail": messages[0] if messages else "입력값이 올바르지 않습니다."},
+    )
 
 
 @app.exception_handler(Exception)
@@ -45,24 +51,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS_LIST,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 api = APIRouter()
-
-from app.api.auth.router import router as auth_router
 api.include_router(auth_router, prefix="/auth", tags=["auth"])
-
-from app.api.posts.router import router as posts_router
 api.include_router(posts_router, prefix="/posts", tags=["posts"])
-
-from app.api.upload.router import router as upload_router
 api.include_router(upload_router, prefix="/upload", tags=["upload"])
-
-from app.api.mypage.router import router as mypage_router
 api.include_router(mypage_router, prefix="/mypage", tags=["mypage"])
-
 app.include_router(api)
 
 

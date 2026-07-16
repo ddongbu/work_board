@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import UserAvatar from './UserAvatar'
 
 function stripMarkdown(text) {
   return text
@@ -52,20 +53,11 @@ export default function PostCard({ post }) {
 
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          {post.author_profile_image_url ? (
-            <img
-              src={post.author_profile_image_url}
-              alt={authorLabel}
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-            />
-          ) : (
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-              style={{ backgroundColor: `hsl(${(authorLabel.charCodeAt(0) ?? 0) * 37 % 360}, 60%, 50%)` }}
-            >
-              {authorInitial}
-            </div>
-          )}
+          <UserAvatar
+            nickname={authorLabel}
+            src={post.author_profile_image_url}
+            className="w-6 h-6 text-xs"
+          />
           <span className="text-xs text-gray-600">
             by <span className="font-medium">{authorLabel}</span>
           </span>

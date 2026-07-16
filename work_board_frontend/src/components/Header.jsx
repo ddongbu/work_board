@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import LoginModal from './LoginModal'
+import UserAvatar from './UserAvatar'
 import api from '../services/api'
 
 export default function Header() {
@@ -57,20 +58,11 @@ export default function Header() {
                     onClick={() => setDropdownOpen((v) => !v)}
                     className="flex items-center gap-1 focus:outline-none"
                   >
-                    {user?.profile_image_url ? (
-                      <img
-                        src={user.profile_image_url}
-                        alt="프로필"
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: `hsl(${(user?.nickname?.charCodeAt(0) ?? 0) * 37 % 360}, 60%, 50%)` }}
-                      >
-                        {user?.nickname?.[0]?.toUpperCase()}
-                      </div>
-                    )}
+                    <UserAvatar
+                      nickname={user?.nickname}
+                      src={user?.profile_image_url}
+                      className="w-8 h-8 text-sm"
+                    />
                     <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>

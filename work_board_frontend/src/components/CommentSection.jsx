@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import api, { updateComment } from '../services/api'
 import { useAuthStore } from '../store/authStore'
+import UserAvatar from './UserAvatar'
 
 function formatDate(dateStr) {
   const date = new Date(dateStr + 'Z')
-  const now = new Date()
-  const diff = Math.floor((now - date) / 1000)
+  const diff = Math.floor((Date.now() - date) / 1000)
   if (diff < 60) return '방금 전'
   if (diff < 3600) return `${Math.floor(diff / 60)}분 전`
   if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`
@@ -13,89 +13,103 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function Avatar({ nickname }) {
-  const colors = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-400', 'bg-pink-500', 'bg-teal-500']
-  const color = colors[nickname.charCodeAt(0) % colors.length]
-  return (
-    <div className={`w-9 h-9 rounded-full ${color} flex items-center justify-center text-white text-sm font-semibold shrink-0`}>
-      {nickname[0].toUpperCase()}
-    </div>
-  )
-}
-
-function ReplyItem({ reply, postId, onDeleted, currentNickname }) {
+function useCommentEdit(commentId, postId, onSuccess) {
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState('')
-  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleEdit = () => {
-    setEditText(reply.content)
+  const startEdit = (currentContent) => {
+    setEditText(currentContent)
     setIsEditing(true)
   }
 
-  const handleEditCancel = () => {
+  const cancelEdit = () => {
     setIsEditing(false)
     setEditText('')
   }
 
-  const handleEditSave = async () => {
+  const saveEdit = async () => {
     if (!editText.trim()) return
-    setEditSubmitting(true)
+    setSubmitting(true)
     try {
-      await updateComment(postId, reply.id, editText)
+      await updateComment(postId, commentId, editText)
       setIsEditing(false)
-      onDeleted()
+      onSuccess()
     } catch {
       alert('수정에 실패했습니다.')
     } finally {
-      setEditSubmitting(false)
+      setSubmitting(false)
     }
   }
+
+  return { isEditing, editText, setEditText, submitting, startEdit, cancelEdit, saveEdit }
+}
+
+function CommentEditForm({ value, onChange, onSave, onCancel, submitting, rows = 3 }) {
+  return (
+    <div className="mt-1">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 resize-none"
+      />
+      <div className="flex gap-2 mt-1.5 justify-end">
+        <button
+          onClick={onCancel}
+          className="px-3 py-1 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50"
+        >
+          취소
+        </button>
+        <button
+          onClick={onSave}
+          disabled={submitting || !value.trim()}
+          className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {submitting ? '...' : '저장'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ReplyItem({ reply, postId, onRefresh, currentNickname }) {
+  const { isEditing, editText, setEditText, submitting, startEdit, cancelEdit, saveEdit } =
+    useCommentEdit(reply.id, postId, onRefresh)
 
   const handleDelete = async () => {
     if (!confirm('답글을 삭제하시겠습니까?')) return
     try {
       await api.delete(`/posts/${postId}/comments/${reply.id}`)
-      onDeleted()
-    } catch { alert('삭제에 실패했습니다.') }
+      onRefresh()
+    } catch {
+      alert('삭제에 실패했습니다.')
+    }
   }
 
   return (
     <div className="flex gap-3">
-      <Avatar nickname={reply.author_nickname} />
+      <UserAvatar nickname={reply.author_nickname} className="w-9 h-9 text-sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-semibold text-gray-800">{reply.author_nickname}</span>
           <span className="text-xs text-gray-400">{formatDate(reply.created_at)}</span>
           {currentNickname === reply.author_nickname && (
             <div className="flex items-center gap-2 ml-auto">
-              <button onClick={handleEdit} className="text-xs text-gray-300 hover:text-blue-400">수정</button>
+              <button onClick={() => startEdit(reply.content)} className="text-xs text-gray-300 hover:text-blue-400">수정</button>
               <button onClick={handleDelete} className="text-xs text-gray-300 hover:text-red-400">삭제</button>
             </div>
           )}
         </div>
         {isEditing ? (
-          <div className="mt-1">
-            <textarea
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              rows={2}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 resize-none"
-            />
-            <div className="flex gap-2 mt-1.5 justify-end">
-              <button
-                onClick={handleEditCancel}
-                className="px-3 py-1 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50"
-              >취소</button>
-              <button
-                onClick={handleEditSave}
-                disabled={editSubmitting || !editText.trim()}
-                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {editSubmitting ? '...' : '저장'}
-              </button>
-            </div>
-          </div>
+          <CommentEditForm
+            value={editText}
+            onChange={setEditText}
+            onSave={saveEdit}
+            onCancel={cancelEdit}
+            submitting={submitting}
+            rows={2}
+          />
         ) : (
           <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{reply.content}</p>
         )}
@@ -104,16 +118,14 @@ function ReplyItem({ reply, postId, onDeleted, currentNickname }) {
   )
 }
 
-function CommentItem({ comment, postId, onDeleted, currentNickname }) {
+function CommentItem({ comment, postId, onRefresh, currentNickname }) {
   const [showReplies, setShowReplies] = useState(false)
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  // 수정 상태
-  const [isEditing, setIsEditing] = useState(false)
-  const [editText, setEditText] = useState('')
-  const [editSubmitting, setEditSubmitting] = useState(false)
   const token = useAuthStore((s) => s.token)
+  const { isEditing, editText, setEditText, submitting: editSubmitting, startEdit, cancelEdit, saveEdit } =
+    useCommentEdit(comment.id, postId, onRefresh)
 
   const submitReply = async () => {
     if (!replyText.trim()) return
@@ -123,7 +135,7 @@ function CommentItem({ comment, postId, onDeleted, currentNickname }) {
       setReplyText('')
       setShowReplyForm(false)
       setShowReplies(true)
-      onDeleted()
+      onRefresh()
     } catch {
       alert('답글 작성에 실패했습니다.')
     } finally {
@@ -135,80 +147,36 @@ function CommentItem({ comment, postId, onDeleted, currentNickname }) {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
     try {
       await api.delete(`/posts/${postId}/comments/${comment.id}`)
-      onDeleted()
+      onRefresh()
     } catch {
       alert('삭제에 실패했습니다.')
-    }
-  }
-
-  const handleEdit = () => {
-    setEditText(comment.content)
-    setIsEditing(true)
-  }
-
-  const handleEditCancel = () => {
-    setIsEditing(false)
-    setEditText('')
-  }
-
-  const handleEditSave = async () => {
-    if (!editText.trim()) return
-    setEditSubmitting(true)
-    try {
-      await updateComment(postId, comment.id, editText)
-      setIsEditing(false)
-      onDeleted()
-    } catch {
-      alert('수정에 실패했습니다.')
-    } finally {
-      setEditSubmitting(false)
     }
   }
 
   return (
     <div className="py-5 border-b border-gray-100 last:border-0">
       <div className="flex gap-3">
-        <Avatar nickname={comment.author_nickname} />
+        <UserAvatar nickname={comment.author_nickname} className="w-9 h-9 text-sm" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold text-gray-800">{comment.author_nickname}</span>
             <span className="text-xs text-gray-400">{formatDate(comment.created_at)}</span>
             {currentNickname === comment.author_nickname && (
               <div className="flex items-center gap-2 ml-auto">
-                <button
-                  onClick={handleEdit}
-                  className="text-xs text-gray-300 hover:text-blue-400"
-                >수정</button>
+                <button onClick={() => startEdit(comment.content)} className="text-xs text-gray-300 hover:text-blue-400">수정</button>
                 <button onClick={handleDelete} className="text-xs text-gray-300 hover:text-red-400">삭제</button>
               </div>
             )}
           </div>
 
-          {/* 수정 모드 */}
           {isEditing ? (
-            <div className="mt-1">
-              <textarea
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                rows={3}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 resize-none"
-              />
-              <div className="flex gap-2 mt-1.5 justify-end">
-                <button
-                  onClick={handleEditCancel}
-                  className="px-3 py-1 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleEditSave}
-                  disabled={editSubmitting || !editText.trim()}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {editSubmitting ? '...' : '저장'}
-                </button>
-              </div>
-            </div>
+            <CommentEditForm
+              value={editText}
+              onChange={setEditText}
+              onSave={saveEdit}
+              onCancel={cancelEdit}
+              submitting={editSubmitting}
+            />
           ) : (
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
           )}
@@ -266,7 +234,7 @@ function CommentItem({ comment, postId, onDeleted, currentNickname }) {
                   key={reply.id}
                   reply={reply}
                   postId={postId}
-                  onDeleted={onDeleted}
+                  onRefresh={onRefresh}
                   currentNickname={currentNickname}
                 />
               ))}
@@ -285,16 +253,14 @@ export default function CommentSection({ postId }) {
   const token = useAuthStore((s) => s.token)
   const user = useAuthStore((s) => s.user)
 
-  const load = async () => {
+  const loadComments = async () => {
     try {
       const { data } = await api.get(`/posts/${postId}/comments`)
       setComments(data)
     } catch { /* silent */ }
   }
 
-  useEffect(() => { load() }, [postId])
-
-  const totalCount = comments.length
+  useEffect(() => { loadComments() }, [postId])
 
   const submit = async () => {
     if (!text.trim()) return
@@ -302,7 +268,7 @@ export default function CommentSection({ postId }) {
     try {
       await api.post(`/posts/${postId}/comments`, { content: text })
       setText('')
-      await load()
+      await loadComments()
     } catch {
       alert('댓글 작성에 실패했습니다.')
     } finally {
@@ -312,7 +278,7 @@ export default function CommentSection({ postId }) {
 
   return (
     <section className="mt-16">
-      <h2 className="text-lg font-bold text-gray-900 mb-6">{totalCount}개의 댓글</h2>
+      <h2 className="text-lg font-bold text-gray-900 mb-6">{comments.length}개의 댓글</h2>
 
       {token ? (
         <div className="mb-8">
@@ -341,14 +307,14 @@ export default function CommentSection({ postId }) {
         {comments.length === 0
           ? <p className="text-sm text-gray-400 py-8 text-center">아직 댓글이 없습니다.</p>
           : comments.map((c) => (
-              <CommentItem
-                key={c.id}
-                comment={c}
-                postId={postId}
-                onDeleted={load}
-                currentNickname={user?.nickname}
-              />
-            ))
+            <CommentItem
+              key={c.id}
+              comment={c}
+              postId={postId}
+              onRefresh={loadComments}
+              currentNickname={user?.nickname}
+            />
+          ))
         }
       </div>
     </section>
