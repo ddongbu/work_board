@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_database_session
 from app.core.redis_client import get_redis
-from app.core.security import create_access_token, create_refresh_token, decode_token
+from app.core.security import create_access_token, create_refresh_token, decode_token, decode_access_token
 from app.api.auth.schema import SignupRequest, LoginRequest, TokenResponse, UserResponse
 from app.api.auth import service
 
@@ -20,7 +20,7 @@ async def get_current_user(
     db: AsyncSession = Depends(get_database_session),
 ):
     try:
-        payload = decode_token(credentials.credentials)
+        payload = decode_access_token(credentials.credentials)
         user_id = int(payload["sub"])
     except Exception:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰")
@@ -43,7 +43,7 @@ async def signup(
     await service.save_refresh_token(redis, user.id, refresh_token)
     response.set_cookie(
         key=REFRESH_COOKIE, value=refresh_token,
-        httponly=True, max_age=COOKIE_MAX_AGE, samesite="lax"
+        httponly=True, secure=True, max_age=COOKIE_MAX_AGE, samesite="lax"
     )
     return TokenResponse(access_token=access_token)
 
@@ -63,7 +63,7 @@ async def login(
     await service.save_refresh_token(redis, user.id, refresh_token)
     response.set_cookie(
         key=REFRESH_COOKIE, value=refresh_token,
-        httponly=True, max_age=COOKIE_MAX_AGE, samesite="lax"
+        httponly=True, secure=True, max_age=COOKIE_MAX_AGE, samesite="lax"
     )
     return TokenResponse(access_token=access_token)
 
@@ -103,7 +103,7 @@ async def check_nickname(
     return {"available": available}
 
 
-@router.get("/owner", response_model=UserResponse)
+@router.get("/owner")
 async def owner(db: AsyncSession = Depends(get_database_session)):
     from sqlalchemy import select
     from app.core.models import User
@@ -111,7 +111,7 @@ async def owner(db: AsyncSession = Depends(get_database_session)):
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="사용자 없음")
-    return UserResponse(id=user.id, email=user.email, nickname=user.nickname)
+    return {"id": user.id, "nickname": user.nickname, "profile_image_url": user.profile_image_url}
 
 
 @router.get("/me", response_model=UserResponse)
@@ -150,6 +150,6 @@ async def refresh(
     await service.save_refresh_token(redis, user.id, new_refresh)
     response.set_cookie(
         key=REFRESH_COOKIE, value=new_refresh,
-        httponly=True, max_age=COOKIE_MAX_AGE, samesite="lax"
+        httponly=True, secure=True, max_age=COOKIE_MAX_AGE, samesite="lax"
     )
     return TokenResponse(access_token=new_access)

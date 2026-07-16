@@ -45,3 +45,10 @@ def decode_token(token: str) -> dict:
         )
     except JWTError:
         raise ValueError("Invalid token")
+
+
+def decode_access_token(token: str) -> dict:
+    payload = decode_token(token)
+    if payload.get("type") != "access":
+        raise ValueError("Access token이 아닙니다.")
+    return payload
