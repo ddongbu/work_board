@@ -10,6 +10,7 @@ router = APIRouter()
 
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+MIME_TO_EXT = {"image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 # 파일 매직 바이트 (MIME 스푸핑 방지)
@@ -18,7 +19,6 @@ MAGIC_BYTES: dict[bytes, str] = {
     b'\x89PNG\r\n\x1a\n': "image/png",
     b'GIF87a': "image/gif",
     b'GIF89a': "image/gif",
-    b'RIFF': "image/webp",  # RIFF....WEBP 형식
 }
 
 
@@ -26,8 +26,8 @@ def _detect_mime(data: bytes) -> str | None:
     for magic, mime in MAGIC_BYTES.items():
         if data[:len(magic)] == magic:
             return mime
-    # WEBP는 RIFF + 4바이트 + WEBP 형식
-    if data[:4] == b'RIFF' and data[8:12] == b'WEBP':
+    # WebP: RIFF + 4바이트(크기) + WEBP 모두 확인 (WAV/AVI 등 다른 RIFF 포맷 차단)
+    if len(data) >= 12 and data[:4] == b'RIFF' and data[8:12] == b'WEBP':
         return "image/webp"
     return None
 
@@ -54,6 +54,9 @@ async def upload_image(
 
     filename = file.filename or ""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        # 모바일 카메라 등 확장자 없이 올라오는 경우 MIME 타입에서 유도
+        ext = MIME_TO_EXT.get(file.content_type, "")
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="허용되지 않는 파일 확장자입니다.")
 
