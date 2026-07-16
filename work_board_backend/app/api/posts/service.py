@@ -19,7 +19,7 @@ def make_summary(content: str, max_len: int = 150) -> str:
     return text[:max_len] + ('...' if len(text) > max_len else '')
 
 
-def _to_list_item(post: Post, nickname: str, like_count: int = 0, comment_count: int = 0) -> dict:
+def _to_list_item(post: Post, nickname: str, profile_image_url: str | None, like_count: int = 0, comment_count: int = 0) -> dict:
     return {
         'id': post.id,
         'title': post.title,
@@ -27,6 +27,7 @@ def _to_list_item(post: Post, nickname: str, like_count: int = 0, comment_count:
         'created_at': post.created_at,
         'summary': make_summary(post.content),
         'author_nickname': nickname,
+        'author_profile_image_url': profile_image_url,
         'like_count': like_count,
         'comment_count': comment_count,
     }
@@ -49,7 +50,7 @@ async def get_posts(db: AsyncSession, page: int, size: int):
 
     result = await db.execute(
         select(
-            Post, User.nickname,
+            Post, User.nickname, User.profile_image_url,
             func.coalesce(like_counts.c.cnt, 0).label('like_count'),
             func.coalesce(comment_counts.c.cnt, 0).label('comment_count'),
         )
@@ -66,7 +67,7 @@ async def get_posts(db: AsyncSession, page: int, size: int):
         select(func.count()).select_from(Post).where(Post.is_published == True)
     )
     total = count_result.scalar()
-    items = [_to_list_item(post, nickname, int(like_count), int(comment_count)) for post, nickname, like_count, comment_count in rows]
+    items = [_to_list_item(post, nickname, profile_image_url, int(like_count), int(comment_count)) for post, nickname, profile_image_url, like_count, comment_count in rows]
     return items, total
 
 
